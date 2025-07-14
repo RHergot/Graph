@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  bi-reporting:
+    build: .
+    container_name: bi-reporting-app
+    environment:
+      - DISPLAY=:99
+      - QT_QPA_PLATFORM=xcb
+    volumes:
+      - ./app/config:/app/app/config
+      - ./logs:/app/logs
+      - ./data:/app/data
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - bi-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: bi-postgres
+    environment:
+      POSTGRES_DB: bi_reporting
+      POSTGRES_USER: bi_user
+      POSTGRES_PASSWORD: bi_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - bi-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: bi-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8081:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - bi-network
+
+volumes:
+  postgres_data:
+
+networks:
+  bi-network:
+    driver: bridge

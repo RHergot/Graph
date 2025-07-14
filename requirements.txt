@@ -1,0 +1,22 @@
+# Module de Reporting BI - Dépendances Python
+# Date: 2025-01-13
+
+# Interface graphique
+PySide6>=6.6.0
+
+# Base de données
+SQLAlchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# Traitement données
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualisation
+matplotlib>=3.7.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# Utilitaires
+typing-extensions>=4.7.0

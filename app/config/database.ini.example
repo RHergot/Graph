@@ -1,0 +1,31 @@
+# Database Configuration Template
+# Copy this file to database.ini and configure your database settings
+
+[DATABASE]
+# PostgreSQL connection settings
+host = localhost
+port = 5432
+database = your_database_name
+user = your_username
+password = your_password
+
+# Connection pool settings
+pool_size = 5
+max_overflow = 10
+pool_timeout = 30
+
+# Query settings  
+query_timeout = 60
+max_rows_display = 1000
+
+[VIEWS]
+# VIEW discovery patterns
+prefixes = v_, rpt_, kpi_, dash_
+exclude_patterns = temp_, test_, backup_
+
+[LOGGING]
+# Logging configuration
+level = INFO
+file = logs/app.log
+max_size = 10MB
+backup_count = 5
