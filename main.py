@@ -9,7 +9,7 @@ Date: 2025-01-14
 
 import sys
 
-from PySide6.QtCore import QLocale, Qt, QTranslator
+from PySide6.QtCore import QTranslator
 from PySide6.QtWidgets import QApplication
 
 # Configuration du chemin d'import pour accéder au module app
