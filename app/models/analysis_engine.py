@@ -3,12 +3,11 @@ Moteur d'analyse - Orchestration des requêtes et traitement des données
 """
 
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
 from models.database_manager import DatabaseManager
-from sqlalchemy import and_, or_, select, text
+from sqlalchemy import text
 from utils.exceptions import DataProcessingError, InvalidFilterError
 
 logger = logging.getLogger(__name__)

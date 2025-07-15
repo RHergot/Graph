@@ -10,7 +10,7 @@ import pandas as pd
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PySide6.QtCore import QDateTime, Qt, Signal
-from PySide6.QtGui import QFont, QStandardItem, QStandardItemModel
+from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QComboBox,
     QDateTimeEdit,
@@ -812,7 +812,7 @@ class MainWindow(QMainWindow):
                     )
 
                     if matplotlib_type == "line":
-                        line = ax1.plot(
+                        ax1.plot(
                             x_data,
                             y_data,
                             marker="o",
@@ -870,7 +870,7 @@ class MainWindow(QMainWindow):
                         matplotlib_type = self.get_chart_type()
 
                         if matplotlib_type == "line":
-                            line = ax2.plot(
+                            ax2.plot(
                                 x_data,
                                 y_data,
                                 marker="s",
@@ -998,7 +998,7 @@ class MainWindow(QMainWindow):
             columns = structure.get("columns", [])
 
             info_text = f"📋 Report: {view_name}\n\n"
-            info_text += f"🏗️ Structure:\n"
+            info_text += "🏗️ Structure:\n"
             info_text += f"  - Number of columns: {len(columns)}\n\n"
 
             if columns:
