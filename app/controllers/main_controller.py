@@ -51,6 +51,7 @@ class MainController(QObject):
         self.main_window.report_selected.connect(self.on_report_selected)
         self.main_window.filters_changed.connect(self.on_filters_changed)
         self.main_window.view_structure_requested.connect(self.on_view_structure_requested)
+        self.main_window.view_management_requested.connect(self.on_view_management_requested)
         
         logger.info("🔗 Signal/slot connections configured")
     
@@ -325,6 +326,35 @@ class MainController(QObject):
             logger.error(f"❌ Erreur actualisation VIEWs: {e}")
             self.main_window.hide_loading()
             self.main_window.show_error(f"Erreur lors de l'actualisation: {e}")
+    
+    def on_view_management_requested(self):
+        """Gestion de la demande d'ouverture du gestionnaire de VIEWs"""
+        try:
+            from views.view_manager_dialog import ViewManagerDialog
+            
+            dialog = ViewManagerDialog(
+                self.analysis_engine.db_manager,
+                self.main_window
+            )
+            
+            dialog.view_created.connect(self.on_view_created)
+            dialog.view_deleted.connect(self.on_view_deleted)
+            
+            dialog.exec()
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur ouverture gestionnaire VIEWs: {e}")
+            self.main_window.show_error(f"Impossible d'ouvrir le gestionnaire de VIEWs: {e}")
+    
+    def on_view_created(self, view_name: str):
+        """Gestion de la création d'une nouvelle VIEW"""
+        logger.info(f"✅ Nouvelle VIEW créée: {view_name}")
+        self.refresh_views()
+    
+    def on_view_deleted(self, view_name: str):
+        """Gestion de la suppression d'une VIEW"""
+        logger.info(f"🗑️ VIEW supprimée: {view_name}")
+        self.refresh_views()
     
     def cleanup(self):
         """Nettoyage avant fermeture de l'application"""

@@ -33,3 +33,11 @@ class QueryExecutionError(ReportingModuleException):
 class ConfigurationError(ReportingModuleException):
     """Erreur de configuration de l'application"""
     pass
+
+class ViewCreationError(ReportingModuleException):
+    """Erreur lors de la création d'une VIEW"""
+    pass
+
+class ViewDeletionError(ReportingModuleException):
+    """Erreur lors de la suppression d'une VIEW"""
+    pass

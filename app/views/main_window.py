@@ -25,6 +25,7 @@ class MainWindow(QMainWindow):
     generate_clicked = Signal(dict)  # Paramètres complets d'analyse
     filters_changed = Signal(dict)  # Changement de filtres
     view_structure_requested = Signal(str)  # Demande structure VIEW
+    view_management_requested = Signal()  # Demande d'ouverture du gestionnaire de VIEWs
     
     def __init__(self):
         super().__init__()
@@ -255,6 +256,13 @@ class MainWindow(QMainWindow):
         self.btn_generate_chart.setToolTip(self.tr("Generate chart with selected columns"))
         controls_layout.addWidget(self.btn_generate_chart)
         
+        # Bouton de gestion des VIEWs
+        self.btn_manage_views = QPushButton(self.tr("🔧 Manage VIEWs"))
+        self.btn_manage_views.setMinimumHeight(35)
+        self.btn_manage_views.setMinimumWidth(140)
+        self.btn_manage_views.setToolTip(self.tr("Create and manage database VIEWs"))
+        controls_layout.addWidget(self.btn_manage_views)
+        
         # Checkbox auto-refresh
         from PySide6.QtWidgets import QCheckBox
         self.checkbox_auto_refresh = QCheckBox(self.tr("Auto"))
@@ -322,6 +330,8 @@ class MainWindow(QMainWindow):
         # Génération manuelle de graphique
         self.btn_generate_chart.clicked.connect(self.on_generate_chart_clicked)
         
+        self.btn_manage_views.clicked.connect(self.on_manage_views_clicked)
+        
         # Changements de colonnes (actualisation automatique si activée)
         self.combo_column_x.currentTextChanged.connect(self.on_column_selection_changed)
         self.combo_column_y1.currentTextChanged.connect(self.on_column_selection_changed)
@@ -372,6 +382,10 @@ class MainWindow(QMainWindow):
         
         # Génération du graphique avec les colonnes sélectionnées
         self.display_chart_with_columns()
+    
+    def on_manage_views_clicked(self):
+        """Gestion du clic sur Gérer VIEWs"""
+        self.view_management_requested.emit()
     
     def on_column_selection_changed(self):
         """Gestion du changement de sélection de colonnes"""

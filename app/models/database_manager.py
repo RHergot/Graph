@@ -119,7 +119,7 @@ class DatabaseManager:
             logger.error(f"❌ Erreur structure VIEW {view_name}: {e}")
             raise ViewNotFoundError(f"Impossible d'accéder à la VIEW {view_name}: {e}")
     
-    def execute_query(self, query, params: Dict = None) -> pd.DataFrame:
+    def execute_query(self, query, params: Optional[Dict] = None) -> pd.DataFrame:
         """Exécution sécurisée avec gestion erreurs et timeout"""
         try:
             with self.engine.connect() as conn:
@@ -176,3 +176,68 @@ class DatabaseManager:
     def get_connection(self):
         """Retourne une connexion à la base de données"""
         return self.engine.connect()
+    
+    def create_view(self, view_name: str, sql_query: str) -> bool:
+        """Crée une nouvelle VIEW PostgreSQL"""
+        try:
+            if not self._validate_view_name(view_name):
+                raise ViewNotFoundError(f"Nom de VIEW invalide: {view_name}")
+            
+            create_query = text(f"CREATE VIEW {view_name} AS {sql_query}")
+            
+            with self.engine.connect() as conn:
+                conn.execute(create_query)
+                conn.commit()
+            
+            logger.info(f"✅ VIEW {view_name} créée avec succès")
+            return True
+            
+        except SQLAlchemyError as e:
+            logger.error(f"❌ Erreur création VIEW {view_name}: {e}")
+            raise QueryExecutionError(f"Impossible de créer la VIEW {view_name}: {e}")
+    
+    def drop_view(self, view_name: str, cascade: bool = False) -> bool:
+        """Supprime une VIEW PostgreSQL"""
+        try:
+            cascade_clause = " CASCADE" if cascade else ""
+            drop_query = text(f"DROP VIEW IF EXISTS {view_name}{cascade_clause}")
+            
+            with self.engine.connect() as conn:
+                conn.execute(drop_query)
+                conn.commit()
+            
+            logger.info(f"✅ VIEW {view_name} supprimée avec succès")
+            return True
+            
+        except SQLAlchemyError as e:
+            logger.error(f"❌ Erreur suppression VIEW {view_name}: {e}")
+            raise QueryExecutionError(f"Impossible de supprimer la VIEW {view_name}: {e}")
+    
+    def get_view_definition(self, view_name: str) -> str:
+        """Récupère la définition SQL d'une VIEW"""
+        try:
+            query = text("""
+                SELECT definition 
+                FROM pg_views 
+                WHERE viewname = :view_name 
+                AND schemaname = :schema
+            """)
+            
+            with self.engine.connect() as conn:
+                result = conn.execute(query, {
+                    'view_name': view_name,
+                    'schema': self.config.get_schema()
+                })
+                row = result.fetchone()
+                
+            return row[0] if row else ""
+            
+        except SQLAlchemyError as e:
+            logger.error(f"❌ Erreur récupération définition VIEW {view_name}: {e}")
+            return ""
+    
+    def _validate_view_name(self, view_name: str) -> bool:
+        """Valide le nom d'une VIEW"""
+        import re
+        pattern = r'^[a-zA-Z][a-zA-Z0-9_]*$'
+        return bool(re.match(pattern, view_name)) and len(view_name) <= 63
