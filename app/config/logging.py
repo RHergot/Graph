@@ -24,7 +24,9 @@ def setup_logging():
         logger.removeHandler(handler)
 
     # Format des messages
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
     # Handler fichier avec rotation
     file_handler = logging.handlers.RotatingFileHandler(

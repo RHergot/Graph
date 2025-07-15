@@ -6,20 +6,10 @@ import logging
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
-from PySide6.QtWidgets import (
-    QComboBox,
-    QDialog,
-    QGroupBox,
-    QHBoxLayout,
-    QLineEdit,
-    QListWidget,
-    QMessageBox,
-    QPushButton,
-    QTabWidget,
-    QTextEdit,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import (QComboBox, QDialog, QGroupBox, QHBoxLayout,
+                               QLineEdit, QListWidget, QMessageBox,
+                               QPushButton, QTabWidget, QTextEdit, QVBoxLayout,
+                               QWidget)
 
 logger = logging.getLogger(__name__)
 
@@ -223,19 +213,25 @@ class ViewManagerDialog(QDialog):
         sql = self.sql_editor.toPlainText().strip()
 
         if not view_name or not sql:
-            QMessageBox.warning(self, "Attention", "Veuillez remplir le nom et la requête SQL")
+            QMessageBox.warning(
+                self, "Attention", "Veuillez remplir le nom et la requête SQL"
+            )
             return
 
         try:
             success = self.database_manager.create_view(view_name, sql)
             if success:
-                QMessageBox.information(self, "Succès", f"✅ VIEW '{view_name}' créée avec succès")
+                QMessageBox.information(
+                    self, "Succès", f"✅ VIEW '{view_name}' créée avec succès"
+                )
                 self.view_created.emit(view_name)
                 self.load_existing_views()
                 self.view_name_edit.clear()
                 self.sql_editor.clear()
         except Exception as e:
-            QMessageBox.critical(self, "Erreur", f"❌ Impossible de créer la VIEW:\n{str(e)}")
+            QMessageBox.critical(
+                self, "Erreur", f"❌ Impossible de créer la VIEW:\n{str(e)}"
+            )
 
     def delete_view(self):
         """Supprime une VIEW sélectionnée"""
@@ -256,12 +252,16 @@ class ViewManagerDialog(QDialog):
             try:
                 success = self.database_manager.drop_view(view_name)
                 if success:
-                    QMessageBox.information(self, "Succès", f"✅ VIEW '{view_name}' supprimée")
+                    QMessageBox.information(
+                        self, "Succès", f"✅ VIEW '{view_name}' supprimée"
+                    )
                     self.view_deleted.emit(view_name)
                     self.load_existing_views()
             except Exception as e:
                 QMessageBox.critical(
-                    self, "Erreur", f"❌ Impossible de supprimer la VIEW:\n{str(e)}"
+                    self,
+                    "Erreur",
+                    f"❌ Impossible de supprimer la VIEW:\n{str(e)}",
                 )
 
     def on_view_selected(self, item):
@@ -283,7 +283,9 @@ class ViewManagerDialog(QDialog):
 
             self.view_details.setPlainText(details)
         except Exception as e:
-            self.view_details.setPlainText(f"Erreur lors du chargement des détails: {e}")
+            self.view_details.setPlainText(
+                f"Erreur lors du chargement des détails: {e}"
+            )
 
     def load_existing_views(self):
         """Charge la liste des VIEWs existantes"""
@@ -397,7 +399,8 @@ class ViewManagerDialog(QDialog):
                 self,
                 "Template appliqué",
                 f"Template '{self.selected_template['name']}' appliqué.\n"
-                "Vous pouvez maintenant modifier le nom et la requête si nécessaire.",
+                "Vous pouvez maintenant modifier le nom et la requête "
+                "si nécessaire.",
             )
 
     def edit_view(self):
@@ -420,7 +423,9 @@ class ViewManagerDialog(QDialog):
             self.btn_create.clicked.connect(lambda: self.update_view(view_name))
 
         except Exception as e:
-            QMessageBox.critical(self, "Erreur", f"❌ Impossible de charger la VIEW:\n{str(e)}")
+            QMessageBox.critical(
+                self, "Erreur", f"❌ Impossible de charger la VIEW:\n{str(e)}"
+            )
 
     def update_view(self, original_name: str):
         """Met à jour une VIEW existante"""
@@ -428,7 +433,9 @@ class ViewManagerDialog(QDialog):
         sql = self.sql_editor.toPlainText().strip()
 
         if not new_name or not sql:
-            QMessageBox.warning(self, "Attention", "Veuillez remplir le nom et la requête SQL")
+            QMessageBox.warning(
+                self, "Attention", "Veuillez remplir le nom et la requête SQL"
+            )
             return
 
         try:
@@ -440,14 +447,18 @@ class ViewManagerDialog(QDialog):
 
             if success:
                 QMessageBox.information(
-                    self, "Succès", f"✅ VIEW '{new_name}' mise à jour avec succès"
+                    self,
+                    "Succès",
+                    f"✅ VIEW '{new_name}' mise à jour avec succès",
                 )
                 self.load_existing_views()
                 self.reset_create_form()
 
         except Exception as e:
             QMessageBox.critical(
-                self, "Erreur", f"❌ Impossible de mettre à jour la VIEW:\n{str(e)}"
+                self,
+                "Erreur",
+                f"❌ Impossible de mettre à jour la VIEW:\n{str(e)}",
             )
 
     def reset_create_form(self):

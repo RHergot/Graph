@@ -11,22 +11,10 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PySide6.QtCore import QDateTime, Qt, Signal
 from PySide6.QtGui import QStandardItem, QStandardItemModel
-from PySide6.QtWidgets import (
-    QComboBox,
-    QDateTimeEdit,
-    QHBoxLayout,
-    QHeaderView,
-    QLabel,
-    QMainWindow,
-    QMessageBox,
-    QProgressBar,
-    QPushButton,
-    QSplitter,
-    QTableView,
-    QTabWidget,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import (QComboBox, QDateTimeEdit, QHBoxLayout,
+                               QHeaderView, QLabel, QMainWindow, QMessageBox,
+                               QProgressBar, QPushButton, QSplitter,
+                               QTableView, QTabWidget, QVBoxLayout, QWidget)
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +27,8 @@ class MainWindow(QMainWindow):
     generate_clicked = Signal(dict)  # Paramètres complets d'analyse
     filters_changed = Signal(dict)  # Changement de filtres
     view_structure_requested = Signal(str)  # Demande structure VIEW
-    view_management_requested = Signal()  # Demande d'ouverture du gestionnaire de VIEWs
+    # Demande d'ouverture du gestionnaire de VIEWs
+    view_management_requested = Signal()
 
     def __init__(self):
         super().__init__()
@@ -278,7 +267,9 @@ class MainWindow(QMainWindow):
         self.btn_generate_chart = QPushButton(self.tr("🎨 Generate"))
         self.btn_generate_chart.setMinimumHeight(35)
         self.btn_generate_chart.setMinimumWidth(120)
-        self.btn_generate_chart.setToolTip(self.tr("Generate chart with selected columns"))
+        self.btn_generate_chart.setToolTip(
+            self.tr("Generate chart with selected columns")
+        )
         controls_layout.addWidget(self.btn_generate_chart)
 
         # Bouton de gestion des VIEWs
@@ -360,9 +351,15 @@ class MainWindow(QMainWindow):
 
         # Changements de colonnes (actualisation automatique si activée)
         self.combo_column_x.currentTextChanged.connect(self.on_column_selection_changed)
-        self.combo_column_y1.currentTextChanged.connect(self.on_column_selection_changed)
-        self.combo_column_y2.currentTextChanged.connect(self.on_column_selection_changed)
-        self.combo_column_y3.currentTextChanged.connect(self.on_column_selection_changed)
+        self.combo_column_y1.currentTextChanged.connect(
+            self.on_column_selection_changed
+        )
+        self.combo_column_y2.currentTextChanged.connect(
+            self.on_column_selection_changed
+        )
+        self.combo_column_y3.currentTextChanged.connect(
+            self.on_column_selection_changed
+        )
 
     # === SLOTS INTERNES ===
 
@@ -402,7 +399,10 @@ class MainWindow(QMainWindow):
             return
 
         # Validation des colonnes sélectionnées
-        if not self.combo_column_x.currentText() or not self.combo_column_y1.currentText():
+        if (
+            not self.combo_column_x.currentText()
+            or not self.combo_column_y1.currentText()
+        ):
             self.show_warning(self.tr("Please select at least X and Y1 columns"))
             return
 
@@ -538,15 +538,21 @@ class MainWindow(QMainWindow):
             displayed_rows = len(display_df)
 
             if total_rows > displayed_rows:
-                self.lbl_row_count.setText(self.tr(f"{displayed_rows}/{total_rows} rows (limited)"))
+                self.lbl_row_count.setText(
+                    self.tr(f"{displayed_rows}/{total_rows} rows (limited)")
+                )
             else:
                 self.lbl_row_count.setText(f"{total_rows} rows")
 
             self.btn_export.setEnabled(True)
 
             # === GÉNÉRATION AUTOMATIQUE DU GRAPHIQUE ===
-            # Si l'auto-refresh est activé et que des colonnes sont sélectionnées
-            if hasattr(self, "checkbox_auto_refresh") and self.checkbox_auto_refresh.isChecked():
+            # Si l'auto-refresh est activé et que des colonnes sont
+            # sélectionnées
+            if (
+                hasattr(self, "checkbox_auto_refresh")
+                and self.checkbox_auto_refresh.isChecked()
+            ):
                 self.display_chart_with_columns()
             else:
                 # Sinon, graphique par défaut avec les 2 premières colonnes
@@ -588,7 +594,9 @@ class MainWindow(QMainWindow):
                     ax.plot(dataframe[x_col], dataframe[y_col], marker="o")
                 elif chart_type == "bar":
                     ax.bar(dataframe[x_col], dataframe[y_col])
-                elif chart_type == "pie" and len(dataframe) <= 20:  # Limite pour lisibilité
+                elif (
+                    chart_type == "pie" and len(dataframe) <= 20
+                ):  # Limite pour lisibilité
                     ax.pie(
                         dataframe[y_col],
                         labels=list(dataframe[x_col].astype(str)),
@@ -707,14 +715,20 @@ class MainWindow(QMainWindow):
                             if not filtered_df[col].dropna().empty
                             else None
                         )
-                        if sample_val and pd.to_datetime(sample_val, errors="coerce") is not pd.NaT:
+                        if (
+                            sample_val
+                            and pd.to_datetime(sample_val, errors="coerce")
+                            is not pd.NaT
+                        ):
                             date_columns.append(col)
                     except:
                         continue
 
             # Filtrage par dates si une colonne de date est trouvée
             if date_columns:
-                date_col = date_columns[0]  # Utilisation de la première colonne de date trouvée
+                date_col = date_columns[
+                    0
+                ]  # Utilisation de la première colonne de date trouvée
                 try:
                     # Conversion en datetime si nécessaire
                     if filtered_df[date_col].dtype == "object":
@@ -729,12 +743,15 @@ class MainWindow(QMainWindow):
                     filtered_df = filtered_df[mask]
 
                     logger.info(
-                        f"📅 Date filtering: {len(filtered_df)} rows retained on column '{date_col}'"
+                        f"📅 Date filtering: {len(filtered_df)} rows retained "
+                        f"on column '{date_col}'"
                     )
                 except Exception as e:
                     logger.warning(f"⚠️ Unable to filter by dates: {e}")
             else:
-                logger.info("ℹ️ No date column detected, displaying without time filter")
+                logger.info(
+                    "ℹ️ No date column detected, displaying without " "time filter"
+                )
 
             if filtered_df.empty:
                 self.show_error(self.tr("No data in selected date range"))
@@ -745,7 +762,11 @@ class MainWindow(QMainWindow):
             y_columns = []
 
             # Collecte des colonnes Y sélectionnées (non vides)
-            for combo in [self.combo_column_y1, self.combo_column_y2, self.combo_column_y3]:
+            for combo in [
+                self.combo_column_y1,
+                self.combo_column_y2,
+                self.combo_column_y3,
+            ]:
                 y_col = combo.currentText()
                 if y_col and not y_col.startswith("--"):
                     y_columns.append(y_col)
@@ -762,7 +783,12 @@ class MainWindow(QMainWindow):
             chart_type = self.combo_chart_type.currentText()
             logger.debug(f"Type de graphique sélectionné: '{chart_type}'")
 
-            colors = ["#2E86AB", "#A23B72", "#F18F01", "#C73E1D"]  # Palette de couleurs
+            colors = [
+                "#2E86AB",
+                "#A23B72",
+                "#F18F01",
+                "#C73E1D",
+            ]  # Palette de couleurs
 
             # Variables pour gérer les axes multiples
             ax2 = None  # Axe secondaire (droite)
@@ -797,7 +823,9 @@ class MainWindow(QMainWindow):
 
                     # Conversion du type pour matplotlib
                     matplotlib_type = self.get_chart_type()
-                    logger.debug(f"Type matplotlib: '{matplotlib_type}' pour colonne {y_col}")
+                    logger.debug(
+                        f"Type matplotlib: '{matplotlib_type}' pour " f"colonne {y_col}"
+                    )
 
                     if matplotlib_type == "line":
                         ax1.plot(
@@ -827,7 +855,12 @@ class MainWindow(QMainWindow):
                             ax1.set_xticklabels(x_data)
                     elif matplotlib_type == "scatter":
                         ax1.scatter(
-                            x_data, y_data, color=color, label=f"{y_col} (L)", s=60, alpha=0.7
+                            x_data,
+                            y_data,
+                            color=color,
+                            label=f"{y_col} (L)",
+                            s=60,
+                            alpha=0.7,
                         )
 
                 except Exception as e:
@@ -895,7 +928,10 @@ class MainWindow(QMainWindow):
             # Configuration de l'axe principal (gauche)
             ax1.set_xlabel(x_column, fontsize=12, fontweight="bold")
             ax1.set_ylabel(
-                self.tr("Values (Left Axis)"), fontsize=12, fontweight="bold", color="#2E86AB"
+                self.tr("Values (Left Axis)"),
+                fontsize=12,
+                fontweight="bold",
+                color="#2E86AB",
             )
             ax1.set_title(
                 f"{chart_type} Chart - Period from {start_date} to {end_date}",
@@ -907,7 +943,10 @@ class MainWindow(QMainWindow):
             # Configuration de l'axe secondaire (droite) si présent
             if ax2:
                 ax2.set_ylabel(
-                    self.tr("Values (Right Axis)"), fontsize=12, fontweight="bold", color="#F18F01"
+                    self.tr("Values (Right Axis)"),
+                    fontsize=12,
+                    fontweight="bold",
+                    color="#F18F01",
                 )
                 # Couleur des graduations de l'axe droit
                 ax2.tick_params(axis="y", labelcolor="#F18F01")
@@ -947,7 +986,10 @@ class MainWindow(QMainWindow):
             self.figure.tight_layout()
             self.canvas.draw()
 
-            logger.info(f"📈 Chart generated: {len(y_columns)} series, {len(filtered_df)} points")
+            logger.info(
+                f"📈 Chart generated: {len(y_columns)} series, "
+                f"{len(filtered_df)} points"
+            )
 
         except Exception as e:
             logger.error(f"❌ Error generating custom chart: {e}")
@@ -958,7 +1000,10 @@ class MainWindow(QMainWindow):
         if connected:
             self.lbl_connection.setText(self.tr("🟢 Connected"))
             if info:
-                tooltip = f"Host: {info.get('host', 'N/A')}\nDB: {info.get('database', 'N/A')}"
+                tooltip = (
+                    f"Host: {info.get('host', 'N/A')}\n"
+                    f"DB: {info.get('database', 'N/A')}"
+                )
                 self.lbl_connection.setToolTip(tooltip)
         else:
             self.lbl_connection.setText(self.tr("🔴 Disconnected"))

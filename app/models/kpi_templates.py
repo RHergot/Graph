@@ -29,9 +29,12 @@ class KPITemplates:
     DATE_TRUNC('month', m.date_debut) as mois,
     ma.nom as machine,
     COUNT(*) as nb_maintenances,
-    AVG(EXTRACT(EPOCH FROM (m.date_fin - m.date_debut))/3600) as duree_moyenne_heures,
-    SUM(CASE WHEN m.type_maintenance = 'preventive' THEN 1 ELSE 0 END) as nb_preventives,
-    SUM(CASE WHEN m.type_maintenance = 'corrective' THEN 1 ELSE 0 END) as nb_correctives
+    AVG(EXTRACT(EPOCH FROM (m.date_fin - m.date_debut))/3600) 
+        as duree_moyenne_heures,
+    SUM(CASE WHEN m.type_maintenance = 'preventive' THEN 1 ELSE 0 END) 
+        as nb_preventives,
+    SUM(CASE WHEN m.type_maintenance = 'corrective' THEN 1 ELSE 0 END) 
+        as nb_correctives
 FROM maintenance m
 JOIN machine ma ON m.machine_id = ma.id
 WHERE m.date_debut >= CURRENT_DATE - INTERVAL '12 months'
@@ -46,7 +49,8 @@ ORDER BY mois DESC, machine""",
     ma.emplacement,
     COUNT(m.id) as nb_pannes,
     SUM(EXTRACT(EPOCH FROM (m.date_fin - m.date_debut))/3600) as heures_arret,
-    ROUND((1 - SUM(EXTRACT(EPOCH FROM (m.date_fin - m.date_debut)))/3600.0/720.0) * 100, 2) as taux_disponibilite_pct
+    ROUND((1 - SUM(EXTRACT(EPOCH FROM (m.date_fin - m.date_debut)))
+          /3600.0/720.0) * 100, 2) as taux_disponibilite_pct
 FROM machine ma
 LEFT JOIN maintenance m ON ma.id = m.machine_id 
     AND m.date_debut >= CURRENT_DATE - INTERVAL '1 month'
@@ -78,7 +82,8 @@ ORDER BY mois DESC, cout_externe DESC""",
     DATE_TRUNC('week', ot.date_creation) as semaine,
     ot.statut,
     COUNT(*) as nb_ordres,
-    AVG(EXTRACT(EPOCH FROM (ot.date_fin - ot.date_debut))/3600) as duree_moyenne_heures,
+    AVG(EXTRACT(EPOCH FROM (ot.date_fin - ot.date_debut))/3600) 
+        as duree_moyenne_heures,
     COUNT(DISTINCT ot.machine_id) as nb_machines_concernees
 FROM ordre_travail ot
 WHERE ot.date_creation >= CURRENT_DATE - INTERVAL '3 months'
@@ -97,12 +102,17 @@ ORDER BY semaine DESC, statut""",
                 "sql": """SELECT 
     p.nom as piece,
     pc.nom as categorie,
-    SUM(CASE WHEN ms.type_mouvement = 'sortie' THEN ms.quantite ELSE 0 END) as sorties_totales,
-    AVG(CASE WHEN ms.type_mouvement = 'entree' THEN ms.quantite ELSE 0 END) as stock_moyen,
+    SUM(CASE WHEN ms.type_mouvement = 'sortie' THEN ms.quantite ELSE 0 END) 
+        as sorties_totales,
+    AVG(CASE WHEN ms.type_mouvement = 'entree' THEN ms.quantite ELSE 0 END) 
+        as stock_moyen,
     CASE 
-        WHEN AVG(CASE WHEN ms.type_mouvement = 'entree' THEN ms.quantite ELSE 0 END) > 0 
-        THEN SUM(CASE WHEN ms.type_mouvement = 'sortie' THEN ms.quantite ELSE 0 END) / 
-             AVG(CASE WHEN ms.type_mouvement = 'entree' THEN ms.quantite ELSE 0 END)
+        WHEN AVG(CASE WHEN ms.type_mouvement = 'entree' 
+                      THEN ms.quantite ELSE 0 END) > 0 
+        THEN SUM(CASE WHEN ms.type_mouvement = 'sortie' 
+                      THEN ms.quantite ELSE 0 END) / 
+             AVG(CASE WHEN ms.type_mouvement = 'entree' 
+                      THEN ms.quantite ELSE 0 END)
         ELSE 0 
     END as taux_rotation
 FROM piece p
@@ -110,7 +120,8 @@ JOIN piece_category pc ON p.category_id = pc.id
 LEFT JOIN mouvement_stock ms ON p.id = ms.piece_id
     AND ms.date_mouvement >= CURRENT_DATE - INTERVAL '12 months'
 GROUP BY p.id, p.nom, pc.nom
-HAVING SUM(CASE WHEN ms.type_mouvement = 'sortie' THEN ms.quantite ELSE 0 END) > 0
+HAVING SUM(CASE WHEN ms.type_mouvement = 'sortie' 
+           THEN ms.quantite ELSE 0 END) > 0
 ORDER BY taux_rotation DESC""",
             },
             {
@@ -159,7 +170,8 @@ ORDER BY mois DESC, type_mouvement""",
     f.nom as fournisseur,
     f.ville,
     COUNT(DISTINCT c.id) as nb_commandes,
-    AVG(EXTRACT(EPOCH FROM (lr.date_reception - c.date_commande))/86400) as delai_moyen_jours,
+    AVG(EXTRACT(EPOCH FROM (lr.date_reception - c.date_commande))/86400) 
+        as delai_moyen_jours,
     SUM(lc.quantite * lc.prix_unitaire) as ca_total_euro,
     AVG(lc.prix_unitaire) as prix_moyen,
     COUNT(DISTINCT p.id) as nb_pieces_fournies
@@ -180,7 +192,8 @@ ORDER BY ca_total_euro DESC""",
     da.statut,
     COUNT(*) as nb_demandes,
     SUM(dal.quantite * dal.prix_estime) as montant_estime_euro,
-    AVG(EXTRACT(EPOCH FROM (da.date_traitement - da.date_demande))/86400) as delai_traitement_jours
+    AVG(EXTRACT(EPOCH FROM (da.date_traitement - da.date_demande))/86400) 
+        as delai_traitement_jours
 FROM demandes_achat da
 JOIN demandes_achat_lignes dal ON da.id = dal.demande_id
 WHERE da.date_demande >= CURRENT_DATE - INTERVAL '6 months'

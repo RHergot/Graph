@@ -53,7 +53,9 @@ class AnalysisWorker(QThread):
 
             # Exécution de l'analyse
             result = self.analysis_engine.run_analysis(
-                view_name=view_name, filters=filters, limit=self.params.get("limit", None)
+                view_name=view_name,
+                filters=filters,
+                limit=self.params.get("limit", None),
             )
 
             if self.is_cancelled:

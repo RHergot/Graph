@@ -11,7 +11,8 @@ from config.database import DatabaseConfig
 from sqlalchemy import MetaData, create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
-from utils.exceptions import DatabaseConnectionError, QueryExecutionError, ViewNotFoundError
+from utils.exceptions import (DatabaseConnectionError, QueryExecutionError,
+                              ViewNotFoundError)
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +31,17 @@ class DatabaseManager:
         """Initialise la connexion à la base de données"""
         try:
             self.engine = create_engine(
-                self.config.get_connection_string(), **self.config.get_engine_options()
+                self.config.get_connection_string(),
+                **self.config.get_engine_options(),
             )
             self._test_connection()
             logger.info("✅ Database connection established")
 
         except Exception as e:
             logger.error(f"❌ Erreur initialisation DB: {e}")
-            raise DatabaseConnectionError(f"Impossible d'initialiser la connexion: {e}")
+            raise DatabaseConnectionError(
+                f"Impossible d'initialiser la connexion: {e}"
+            )
 
     def _test_connection(self) -> bool:
         """Test de connexion à la base de données"""
@@ -106,18 +110,25 @@ class DatabaseManager:
                 try:
                     # Récupération colonnes pour description
                     columns = inspector.get_columns(view_name, schema=schema)
-                    col_names = [col["name"] for col in columns[:5]]  # Top 5 colonnes
+                    # Top 5 colonnes
+                    col_names = [col["name"] for col in columns[:5]]
 
                     views_info.append(
                         {
                             "name": view_name,
-                            "description": f"Analyse basée sur {view_name.replace('vw_', '').replace('_', ' ').title()}",
+                            "description": (
+                                f"Analyse basée sur "
+                                f"{view_name.replace('vw_', '').replace('_', ' ')}"
+                                ".title()"
+                            ),
                             "columns": col_names,
                             "column_count": len(columns),
                         }
                     )
                 except Exception as e:
-                    logger.warning(f"⚠️ Impossible d'analyser la VIEW {view_name}: {e}")
+                    logger.warning(
+                        f"⚠️ Impossible d'analyser la VIEW {view_name}: {e}"
+                    )
                     continue
 
             logger.info(f"📊 Found {len(views_info)} business VIEWs")
@@ -149,16 +160,22 @@ class DatabaseManager:
             }
         except SQLAlchemyError as e:
             logger.error(f"❌ Erreur structure VIEW {view_name}: {e}")
-            raise ViewNotFoundError(f"Impossible d'accéder à la VIEW {view_name}: {e}")
+            raise ViewNotFoundError(
+                f"Impossible d'accéder à la VIEW {view_name}: {e}"
+            )
 
-    def execute_query(self, query, params: Optional[Dict] = None) -> pd.DataFrame:
+    def execute_query(
+        self, query, params: Optional[Dict] = None
+    ) -> pd.DataFrame:
         """Exécution sécurisée avec gestion erreurs et timeout"""
         try:
             if self.engine is None:
                 raise DatabaseConnectionError("Engine not initialized")
             with self.engine.connect() as conn:
                 # Configuration timeout
-                conn = conn.execution_options(autocommit=True, compiled_cache={})
+                conn = conn.execution_options(
+                    autocommit=True, compiled_cache={}
+                )
 
                 # Exécution requête
                 if params:
@@ -169,7 +186,10 @@ class DatabaseManager:
                 # Limitation sécurité
                 max_rows = self.config.get_max_rows()
                 if len(df) > max_rows:
-                    logger.warning(f"⚠️ Query returns {len(df)} rows, limiting to {max_rows}")
+                    logger.warning(
+                        f"⚠️ Query returns {len(df)} rows, "
+                        f"limiting to {max_rows}"
+                    )
                     df = df.head(max_rows)
 
                 logger.info(f"📈 Query executed: {len(df)} rows returned")
@@ -233,7 +253,9 @@ class DatabaseManager:
 
         except SQLAlchemyError as e:
             logger.error(f"❌ Erreur création VIEW {view_name}: {e}")
-            raise QueryExecutionError(f"Impossible de créer la VIEW {view_name}: {e}")
+            raise QueryExecutionError(
+                f"Impossible de créer la VIEW {view_name}: {e}"
+            )
 
     def drop_view(self, view_name: str, cascade: bool = False) -> bool:
         """Supprime une VIEW PostgreSQL"""
@@ -241,7 +263,9 @@ class DatabaseManager:
             if self.engine is None:
                 raise DatabaseConnectionError("Engine not initialized")
             cascade_clause = " CASCADE" if cascade else ""
-            drop_query = text(f"DROP VIEW IF EXISTS {view_name}{cascade_clause}")
+            drop_query = text(
+                f"DROP VIEW IF EXISTS {view_name}{cascade_clause}"
+            )
 
             with self.engine.connect() as conn:
                 conn.execute(drop_query)
@@ -252,7 +276,9 @@ class DatabaseManager:
 
         except SQLAlchemyError as e:
             logger.error(f"❌ Erreur suppression VIEW {view_name}: {e}")
-            raise QueryExecutionError(f"Impossible de supprimer la VIEW {view_name}: {e}")
+            raise QueryExecutionError(
+                f"Impossible de supprimer la VIEW {view_name}: {e}"
+            )
 
     def get_view_definition(self, view_name: str) -> str:
         """Récupère la définition SQL d'une VIEW"""
@@ -270,14 +296,20 @@ class DatabaseManager:
 
             with self.engine.connect() as conn:
                 result = conn.execute(
-                    query, {"view_name": view_name, "schema": self.config.get_schema()}
+                    query,
+                    {
+                        "view_name": view_name,
+                        "schema": self.config.get_schema(),
+                    },
                 )
                 row = result.fetchone()
 
             return row[0] if row else ""
 
         except SQLAlchemyError as e:
-            logger.error(f"❌ Erreur récupération définition VIEW {view_name}: {e}")
+            logger.error(
+                f"❌ Erreur récupération définition VIEW {view_name}: {e}"
+            )
             return ""
 
     def _validate_view_name(self, view_name: str) -> bool:
@@ -289,7 +321,12 @@ class DatabaseManager:
         if not (bool(re.match(pattern, view_name)) and len(view_name) <= 63):
             return False
 
-        kpi_prefixes = ["kpi_gmao_", "kpi_stock_", "kpi_purchase_", "kpi_sale_"]
+        kpi_prefixes = [
+            "kpi_gmao_",
+            "kpi_stock_",
+            "kpi_purchase_",
+            "kpi_sale_",
+        ]
         if any(view_name.startswith(prefix) for prefix in kpi_prefixes):
             return True
 
@@ -312,11 +349,19 @@ class DatabaseManager:
                 if old_definition:
                     try:
                         self.create_view(view_name, old_definition)
-                        logger.warning(f"⚠️ VIEW {view_name} restaurée après erreur de mise à jour")
+                        logger.warning(
+                            f"⚠️ VIEW {view_name} restaurée après "
+                            f"erreur de mise à jour"
+                        )
                     except:
-                        logger.error(f"❌ Impossible de restaurer VIEW {view_name}")
+                        logger.error(
+                            f"❌ Impossible de restaurer VIEW "
+                            f"{view_name}"
+                        )
                 raise create_error
 
         except SQLAlchemyError as e:
             logger.error(f"❌ Erreur mise à jour VIEW {view_name}: {e}")
-            raise QueryExecutionError(f"Impossible de mettre à jour la VIEW {view_name}: {e}")
+            raise QueryExecutionError(
+                f"Impossible de mettre à jour la VIEW {view_name}: {e}"
+            )

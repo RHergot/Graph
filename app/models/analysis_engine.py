@@ -36,7 +36,11 @@ class AnalysisEngine:
         return self.available_views
 
     def run_analysis(
-        self, view_name: str, filters: Optional[Dict] = None, aggregations: Optional[Dict] = None, limit: Optional[int] = None
+        self,
+        view_name: str,
+        filters: Optional[Dict] = None,
+        aggregations: Optional[Dict] = None,
+        limit: Optional[int] = None,
     ) -> pd.DataFrame:
         """
         Exécute une analyse sur une VIEW avec filtres optionnels
@@ -44,7 +48,8 @@ class AnalysisEngine:
         Args:
             view_name: Nom de la VIEW à interroger
             filters: Dictionnaire de filtres (ex: {'date_start': '2024-01-01'})
-            aggregations: Agrégations à appliquer (ex: {'group_by': ['column1']})
+            aggregations: Agrégations à appliquer
+                (ex: {'group_by': ['column1']})
             limit: Limite du nombre de lignes
 
         Returns:
@@ -75,7 +80,11 @@ class AnalysisEngine:
         return any(view["name"] == view_name for view in self.available_views)
 
     def _build_query(
-        self, view_name: str, filters: Optional[Dict] = None, aggregations: Optional[Dict] = None, limit: Optional[int] = None
+        self,
+        view_name: str,
+        filters: Optional[Dict] = None,
+        aggregations: Optional[Dict] = None,
+        limit: Optional[int] = None,
     ) -> str:
         """Construit la requête SQL dynamique"""
 
@@ -120,13 +129,15 @@ class AnalysisEngine:
                 continue
 
             if key == "date_start" and value:
-                # Filtre date de début (trouve la colonne de date dynamiquement)
+                # Filtre date de début (trouve la colonne de date
+                # dynamiquement)
                 date_column = self._find_date_column(view_name)
                 if date_column:
                     conditions.append(f"{date_column} >= '{value}'")
                 else:
                     logger.warning(
-                        f"⚠️ Filtre date_start ignoré: aucune colonne de date trouvée dans {view_name}"
+                        f"⚠️ Filtre date_start ignoré: aucune colonne de "
+                        f"date trouvée dans {view_name}"
                     )
 
             elif key == "date_end" and value:
@@ -136,7 +147,8 @@ class AnalysisEngine:
                     conditions.append(f"{date_column} <= '{value}'")
                 else:
                     logger.warning(
-                        f"⚠️ Filtre date_end ignoré: aucune colonne de date trouvée dans {view_name}"
+                        f"⚠️ Filtre date_end ignoré: aucune colonne de "
+                        f"date trouvée dans {view_name}"
                     )
 
             elif key.startswith("filter_") and value:
@@ -149,7 +161,9 @@ class AnalysisEngine:
 
         return " AND ".join(conditions)
 
-    def _find_date_column(self, view_name: Optional[str] = None) -> Optional[str]:
+    def _find_date_column(
+        self, view_name: Optional[str] = None
+    ) -> Optional[str]:
         """Trouve la première colonne de type date dans la VIEW"""
         if not view_name:
             return None
@@ -168,7 +182,12 @@ class AnalysisEngine:
                 # Types de dates PostgreSQL
                 if any(
                     date_type in col_type
-                    for date_type in ["date", "timestamp", "timestamptz", "time"]
+                    for date_type in [
+                        "date",
+                        "timestamp",
+                        "timestamptz",
+                        "time",
+                    ]
                 ):
                     date_columns.append(col["name"])
 
@@ -188,14 +207,23 @@ class AnalysisEngine:
                     date_columns.append(col["name"])
 
             if date_columns:
-                logger.info(f"📅 Colonnes date détectées dans {view_name}: {date_columns}")
-                return date_columns[0]  # Retourne la première colonne de date trouvée
+                logger.info(
+                    f"📅 Colonnes date détectées dans {view_name}: "
+                    f"{date_columns}"
+                )
+                return date_columns[
+                    0
+                ]  # Retourne la première colonne de date trouvée
             else:
-                logger.warning(f"⚠️ Aucune colonne de date trouvée dans {view_name}")
+                logger.warning(
+                    f"⚠️ Aucune colonne de date trouvée dans {view_name}"
+                )
                 return None
 
         except Exception as e:
-            logger.error(f"❌ Erreur détection colonne date pour {view_name}: {e}")
+            logger.error(
+                f"❌ Erreur détection colonne date pour {view_name}: {e}"
+            )
             return None
 
     def _build_aggregation_select(self, aggregations: Dict) -> str:
@@ -237,7 +265,9 @@ class AnalysisEngine:
 
             return {
                 "structure": structure,
-                "sample_data": sample.to_dict("records") if not sample.empty else [],
+                "sample_data": (
+                    sample.to_dict("records") if not sample.empty else []
+                ),
                 "row_count_sample": len(sample),
             }
         except Exception as e:

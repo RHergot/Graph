@@ -16,7 +16,11 @@ logger = logging.getLogger(__name__)
 class MainController(QObject):
     """Contrôleur principal de l'application MVC"""
 
-    def __init__(self, analysis_engine: AnalysisEngine, main_window: MainWindow):
+    def __init__(
+        self,
+        analysis_engine: AnalysisEngine,
+        main_window: MainWindow,
+    ):
         """
         Initialisation du contrôleur
 
@@ -50,8 +54,12 @@ class MainController(QObject):
         self.main_window.generate_clicked.connect(self.on_generate_analysis)
         self.main_window.report_selected.connect(self.on_report_selected)
         self.main_window.filters_changed.connect(self.on_filters_changed)
-        self.main_window.view_structure_requested.connect(self.on_view_structure_requested)
-        self.main_window.view_management_requested.connect(self.on_view_management_requested)
+        self.main_window.view_structure_requested.connect(
+            self.on_view_structure_requested
+        )
+        self.main_window.view_management_requested.connect(
+            self.on_view_management_requested
+        )
 
         logger.info("🔗 Signal/slot connections configured")
 
@@ -62,13 +70,17 @@ class MainController(QObject):
 
         # Mise à jour du statut de connexion
         try:
-            connection_info = self.analysis_engine.db_manager.get_connection_info()
+            connection_info = (
+                self.analysis_engine.db_manager.get_connection_info()
+            )
             self.main_window.update_connection_status(True, connection_info)
             self.is_connected = True
         except Exception as e:
             logger.error(f"❌ Erreur connexion: {e}")
             self.main_window.update_connection_status(False)
-            self.main_window.show_error(f"Erreur de connexion à la base de données: {e}")
+            self.main_window.show_error(
+                f"Erreur de connexion à la base de données: {e}"
+            )
 
     # === GESTION DES ÉVÉNEMENTS DE LA VUE ===
 
@@ -82,20 +94,29 @@ class MainController(QObject):
         try:
             view_name = params.get("view_name", "")
 
-            # Extraction du nom réel de la VIEW (suppression info additionnelle)
+            # Extraction du nom réel de la VIEW
+            # (suppression info additionnelle)
             if " (" in view_name:
                 view_name = view_name.split(" (")[0]
 
-            if not view_name or view_name == "Aucun rapport disponible":
-                self.main_window.show_warning("Veuillez sélectionner un rapport valide")
+            if (
+                not view_name or view_name == "Aucun rapport disponible"
+            ):
+                self.main_window.show_warning(
+                    "Veuillez sélectionner un rapport valide"
+                )
                 return
 
             logger.info(f"🚀 Lancement analyse pour {view_name}")
 
             # Annulation de l'analyse précédente si active
-            if self.current_analysis_worker and self.current_analysis_worker.isRunning():
+            if (
+                self.current_analysis_worker
+                and self.current_analysis_worker.isRunning()
+            ):
                 self.current_analysis_worker.cancel()
-                self.current_analysis_worker.wait(1000)  # Attente max 1 seconde
+                # Attente max 1 seconde
+                self.current_analysis_worker.wait(1000)
 
             # Affichage du chargement
             self.main_window.show_loading(f"Analyse de {view_name}...")
@@ -105,12 +126,18 @@ class MainController(QObject):
             analysis_params["view_name"] = view_name
 
             # Création et lancement du worker
-            self.current_analysis_worker = AnalysisWorker(self.analysis_engine, analysis_params)
+            self.current_analysis_worker = AnalysisWorker(
+                self.analysis_engine, analysis_params
+            )
 
             # Connexion des signaux du worker
-            self.current_analysis_worker.finished.connect(self.on_analysis_finished)
+            self.current_analysis_worker.finished.connect(
+                self.on_analysis_finished
+            )
             self.current_analysis_worker.error.connect(self.on_analysis_error)
-            self.current_analysis_worker.progress.connect(self.on_analysis_progress)
+            self.current_analysis_worker.progress.connect(
+                self.on_analysis_progress
+            )
 
             # Démarrage
             self.current_analysis_worker.start()
@@ -118,7 +145,9 @@ class MainController(QObject):
         except Exception as e:
             logger.error(f"❌ Erreur lancement analyse: {e}")
             self.main_window.hide_loading()
-            self.main_window.show_error(f"Erreur lors du lancement de l'analyse: {e}")
+            self.main_window.show_error(
+                f"Erreur lors du lancement de l'analyse: {e}"
+            )
 
     def on_report_selected(self, report_name: str):
         """
@@ -131,7 +160,9 @@ class MainController(QObject):
             return
 
         # Extraction du nom réel
-        view_name = report_name.split(" (")[0] if " (" in report_name else report_name
+        view_name = (
+            report_name.split(" (")[0] if " (" in report_name else report_name
+        )
 
         logger.info(f"📋 Report selected: {view_name}")
 
@@ -139,8 +170,12 @@ class MainController(QObject):
         if self.current_info_worker and self.current_info_worker.isRunning():
             self.current_info_worker.terminate()
 
-        self.current_info_worker = ViewInfoWorker(self.analysis_engine, view_name)
-        self.current_info_worker.finished.connect(self.on_view_info_received)
+        self.current_info_worker = ViewInfoWorker(
+            self.analysis_engine, view_name
+        )
+        self.current_info_worker.finished.connect(
+            self.on_view_info_received
+        )
         self.current_info_worker.error.connect(self.on_view_info_error)
         self.current_info_worker.start()
 
@@ -191,7 +226,9 @@ class MainController(QObject):
 
         except Exception as e:
             logger.error(f"❌ Error processing results: {e}")
-            self.main_window.show_error(f"Erreur lors de l'affichage des résultats: {e}")
+            self.main_window.show_error(
+                f"Erreur lors de l'affichage des résultats: {e}"
+            )
 
     def on_analysis_error(self, error_message: str):
         """
@@ -244,7 +281,9 @@ class MainController(QObject):
 
         except Exception as e:
             logger.error(f"❌ Erreur traitement VIEWs: {e}")
-            self.main_window.show_error(f"Erreur lors du chargement des rapports: {e}")
+            self.main_window.show_error(
+                f"Erreur lors du chargement des rapports: {e}"
+            )
 
     def on_views_discovery_error(self, error_message: str):
         """
@@ -256,7 +295,9 @@ class MainController(QObject):
         logger.error(f"❌ Error discovering VIEWs: {error_message}")
 
         self.main_window.hide_loading()
-        self.main_window.show_error(f"Erreur lors de la découverte des rapports: {error_message}")
+        self.main_window.show_error(
+            f"Erreur lors de la découverte des rapports: {error_message}"
+        )
 
         # Nettoyage
         if self.current_discovery_worker:
@@ -301,18 +342,27 @@ class MainController(QObject):
         """Actualisation de la liste des VIEWs disponibles"""
         try:
             # Annulation de la découverte précédente si active
-            if self.current_discovery_worker and self.current_discovery_worker.isRunning():
+            if (
+                self.current_discovery_worker
+                and self.current_discovery_worker.isRunning()
+            ):
                 self.current_discovery_worker.terminate()
 
             # Affichage du chargement
             self.main_window.show_loading("Découverte des rapports...")
 
             # Création et lancement du worker de découverte
-            self.current_discovery_worker = ViewDiscoveryWorker(self.analysis_engine.db_manager)
+            self.current_discovery_worker = ViewDiscoveryWorker(
+                self.analysis_engine.db_manager
+            )
 
             # Connexion des signaux
-            self.current_discovery_worker.finished.connect(self.on_views_discovered)
-            self.current_discovery_worker.error.connect(self.on_views_discovery_error)
+            self.current_discovery_worker.finished.connect(
+                self.on_views_discovered
+            )
+            self.current_discovery_worker.error.connect(
+                self.on_views_discovery_error
+            )
 
             # Démarrage
             self.current_discovery_worker.start()
@@ -327,7 +377,9 @@ class MainController(QObject):
         try:
             from views.view_manager_dialog import ViewManagerDialog
 
-            dialog = ViewManagerDialog(self.analysis_engine.db_manager, self.main_window)
+            dialog = ViewManagerDialog(
+                self.analysis_engine.db_manager, self.main_window
+            )
 
             dialog.view_created.connect(self.on_view_created)
             dialog.view_deleted.connect(self.on_view_deleted)
@@ -336,7 +388,9 @@ class MainController(QObject):
 
         except Exception as e:
             logger.error(f"❌ Erreur ouverture gestionnaire VIEWs: {e}")
-            self.main_window.show_error(f"Impossible d'ouvrir le gestionnaire de VIEWs: {e}")
+            self.main_window.show_error(
+                f"Impossible d'ouvrir le gestionnaire de VIEWs: {e}"
+            )
 
     def on_view_created(self, view_name: str):
         """Gestion de la création d'une nouvelle VIEW"""
