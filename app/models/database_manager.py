@@ -11,8 +11,11 @@ from config.database import DatabaseConfig
 from sqlalchemy import MetaData, create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
-from utils.exceptions import (DatabaseConnectionError, QueryExecutionError,
-                              ViewNotFoundError)
+from utils.exceptions import (
+    DatabaseConnectionError,
+    QueryExecutionError,
+    ViewNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -113,13 +116,12 @@ class DatabaseManager:
                     # Top 5 colonnes
                     col_names = [col["name"] for col in columns[:5]]
 
+                    clean_name = view_name.replace("vw_", "").replace("_", " ")
                     views_info.append(
                         {
                             "name": view_name,
                             "description": (
-                                f"Analyse basée sur "
-                                f"{view_name.replace('vw_', '').replace('_', ' ')}"
-                                ".title()"
+                                f"Analyse basée sur {clean_name}.title()"
                             ),
                             "columns": col_names,
                             "column_count": len(columns),
@@ -287,9 +289,9 @@ class DatabaseManager:
                 raise DatabaseConnectionError("Engine not initialized")
             query = text(
                 """
-                SELECT definition 
-                FROM pg_views 
-                WHERE viewname = :view_name 
+                SELECT definition
+                FROM pg_views
+                WHERE viewname = :view_name
                 AND schemaname = :schema
             """
             )
@@ -353,10 +355,9 @@ class DatabaseManager:
                             f"⚠️ VIEW {view_name} restaurée après "
                             f"erreur de mise à jour"
                         )
-                    except:
+                    except Exception:
                         logger.error(
-                            f"❌ Impossible de restaurer VIEW "
-                            f"{view_name}"
+                            f"❌ Impossible de restaurer VIEW {view_name}"
                         )
                 raise create_error
 

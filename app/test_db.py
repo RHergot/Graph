@@ -36,8 +36,8 @@ def test_database_connection():
                 result = conn.execute(
                     text(
                         """
-                    SELECT schema_name 
-                    FROM information_schema.schemata 
+                    SELECT schema_name
+                    FROM information_schema.schemata
                     WHERE schema_name NOT IN (
                         'information_schema', 'pg_catalog', 'pg_toast'
                     )
@@ -54,7 +54,7 @@ def test_database_connection():
                     text(
                         """
                     SELECT table_schema, table_name, table_type
-                    FROM information_schema.tables 
+                    FROM information_schema.tables
                     WHERE table_schema NOT IN (
                         'information_schema', 'pg_catalog'
                     )
@@ -88,7 +88,7 @@ def test_database_connection():
                     text(
                         """
                     SELECT table_schema, table_name
-                    FROM information_schema.views 
+                    FROM information_schema.views
                     WHERE table_schema NOT IN (
                         'information_schema', 'pg_catalog'
                     )
@@ -102,7 +102,7 @@ def test_database_connection():
                 if v_views:
                     print(
                         f"🎯 VIEWs avec préfixe 'v_' trouvées ({len(v_views)}):"
-                    )
+                    )  # fmt: off
                     for schema, name in v_views:
                         print(f"   📊 {schema}.{name}")
                 else:
@@ -115,7 +115,7 @@ def test_database_connection():
                     text(
                         """
                     SELECT table_schema, table_name
-                    FROM information_schema.views 
+                    FROM information_schema.views
                     WHERE table_schema NOT IN (
                         'information_schema', 'pg_catalog'
                     )
@@ -165,7 +165,7 @@ def test_database_connection():
             if view["columns"]:
                 print(
                     f"      Premières colonnes: {', '.join(view['columns'])}"
-                )
+                )  # fmt: off
             print()
 
         return True

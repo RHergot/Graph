@@ -78,7 +78,9 @@ class AnalysisWorker(QThread):
 
         # Filtres de dates
         if "date_start" in self.params and self.params["date_start"]:
-            filters["date_start"] = self.params["date_start"].strftime("%Y-%m-%d")
+            filters["date_start"] = self.params["date_start"].strftime(
+                "%Y-%m-%d"
+            )  # fmt: off
 
         if "date_end" in self.params and self.params["date_end"]:
             filters["date_end"] = self.params["date_end"].strftime("%Y-%m-%d")

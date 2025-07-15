@@ -11,10 +11,22 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PySide6.QtCore import QDateTime, Qt, Signal
 from PySide6.QtGui import QStandardItem, QStandardItemModel
-from PySide6.QtWidgets import (QComboBox, QDateTimeEdit, QHBoxLayout,
-                               QHeaderView, QLabel, QMainWindow, QMessageBox,
-                               QProgressBar, QPushButton, QSplitter,
-                               QTableView, QTabWidget, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDateTimeEdit,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QSplitter,
+    QTableView,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +151,9 @@ class MainWindow(QMainWindow):
         self.btn_generate = QPushButton(self.tr("🔄 Generate Analysis"))
         self.btn_generate.setMinimumHeight(40)
         self.btn_generate.setMinimumWidth(150)
-        self.btn_generate.setToolTip(self.tr("Run analysis with current parameters"))
+        self.btn_generate.setToolTip(
+            self.tr("Run analysis with current parameters")
+        )  # fmt: off
         layout.addWidget(self.btn_generate)
 
         self.btn_refresh = QPushButton(self.tr("♻️ Refresh"))
@@ -195,7 +209,9 @@ class MainWindow(QMainWindow):
         # Configuration affichage
         self.table_view.setAlternatingRowColors(True)
         self.table_view.setSortingEnabled(True)
-        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.table_view.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Interactive
+        )  # fmt: off
         self.table_view.setSelectionBehavior(QTableView.SelectRows)
 
         self.tab_widget.addTab(self.table_view, self.tr("📋 Data"))
@@ -207,7 +223,7 @@ class MainWindow(QMainWindow):
 
         # === CONTRÔLES GRAPHIQUE SUR UNE LIGNE ===
         controls_frame = QWidget()
-        controls_layout = QHBoxLayout(controls_frame)  # Une seule ligne horizontale
+        controls_layout = QHBoxLayout(controls_frame)
         controls_frame.setMaximumHeight(60)
 
         # Type de graphique
@@ -249,7 +265,9 @@ class MainWindow(QMainWindow):
         controls_layout.addWidget(QLabel(self.tr("📊 Y2:")))
         self.combo_column_y2 = QComboBox()
         self.combo_column_y2.setMinimumWidth(150)
-        self.combo_column_y2.setToolTip(self.tr("Optional column for second Y axis"))
+        self.combo_column_y2.setToolTip(
+            self.tr("Optional column for second Y axis")
+        )  # fmt: off
         controls_layout.addWidget(self.combo_column_y2)
 
         controls_layout.addSpacing(10)
@@ -258,7 +276,9 @@ class MainWindow(QMainWindow):
         controls_layout.addWidget(QLabel(self.tr("📉 Y3:")))
         self.combo_column_y3 = QComboBox()
         self.combo_column_y3.setMinimumWidth(150)
-        self.combo_column_y3.setToolTip(self.tr("Optional column for third Y axis"))
+        self.combo_column_y3.setToolTip(
+            self.tr("Optional column for third Y axis")
+        )  # fmt: off
         controls_layout.addWidget(self.combo_column_y3)
 
         controls_layout.addSpacing(20)
@@ -276,7 +296,9 @@ class MainWindow(QMainWindow):
         self.btn_manage_views = QPushButton(self.tr("🔧 Manage VIEWs"))
         self.btn_manage_views.setMinimumHeight(35)
         self.btn_manage_views.setMinimumWidth(140)
-        self.btn_manage_views.setToolTip(self.tr("Create and manage database VIEWs"))
+        self.btn_manage_views.setToolTip(
+            self.tr("Create and manage database VIEWs")
+        )  # fmt: off
         controls_layout.addWidget(self.btn_manage_views)
 
         # Checkbox auto-refresh
@@ -284,7 +306,9 @@ class MainWindow(QMainWindow):
 
         self.checkbox_auto_refresh = QCheckBox(self.tr("Auto"))
         self.checkbox_auto_refresh.setChecked(True)
-        self.checkbox_auto_refresh.setToolTip(self.tr("Automatic chart refresh"))
+        self.checkbox_auto_refresh.setToolTip(
+            self.tr("Automatic chart refresh")
+        )  # fmt: off
         controls_layout.addWidget(self.checkbox_auto_refresh)
 
         controls_layout.addStretch()
@@ -303,7 +327,9 @@ class MainWindow(QMainWindow):
         info_widget = QWidget()
         layout = QVBoxLayout(info_widget)
 
-        self.info_label = QLabel(self.tr("ℹ️ Select a report to see information"))
+        self.info_label = QLabel(
+            self.tr("ℹ️ Select a report to see information")
+        )  # fmt: off
         self.info_label.setWordWrap(True)
         self.info_label.setAlignment(Qt.AlignTop)
         layout.addWidget(self.info_label)
@@ -329,7 +355,7 @@ class MainWindow(QMainWindow):
         """Configuration des connexions de signaux internes"""
         # Changements de sélection
         self.combo_views.currentTextChanged.connect(
-            lambda text: self.report_selected.emit(text) if text else None
+            lambda text: (self.report_selected.emit(text) if text else None)
         )
 
         # Actions utilisateur
@@ -341,7 +367,9 @@ class MainWindow(QMainWindow):
         self.date_end.dateTimeChanged.connect(self.on_filters_changed)
 
         # Changement type graphique
-        self.combo_chart_type.currentTextChanged.connect(self.on_chart_type_changed)
+        self.combo_chart_type.currentTextChanged.connect(
+            self.on_chart_type_changed
+        )  # fmt: off
 
         # === NOUVEAUX CONTRÔLES GRAPHIQUES ===
         # Génération manuelle de graphique
@@ -350,7 +378,9 @@ class MainWindow(QMainWindow):
         self.btn_manage_views.clicked.connect(self.on_manage_views_clicked)
 
         # Changements de colonnes (actualisation automatique si activée)
-        self.combo_column_x.currentTextChanged.connect(self.on_column_selection_changed)
+        self.combo_column_x.currentTextChanged.connect(
+            self.on_column_selection_changed
+        )  # fmt: off
         self.combo_column_y1.currentTextChanged.connect(
             self.on_column_selection_changed
         )
@@ -403,7 +433,9 @@ class MainWindow(QMainWindow):
             not self.combo_column_x.currentText()
             or not self.combo_column_y1.currentText()
         ):
-            self.show_warning(self.tr("Please select at least X and Y1 columns"))
+            self.show_warning(
+                self.tr("Please select at least X and Y1 columns")
+            )  # fmt: off
             return
 
         # Génération du graphique avec les colonnes sélectionnées
@@ -468,7 +500,9 @@ class MainWindow(QMainWindow):
             return
 
         for view_info in views_list:
-            display_text = f"{view_info['name']} ({view_info['column_count']} columns)"
+            display_text = (
+                f"{view_info['name']} ({view_info['column_count']} columns)"
+            )
             self.combo_views.addItem(display_text, view_info["name"])
 
         self.lbl_view_count.setText(self.tr(f"{len(views_list)} reports"))
@@ -684,9 +718,9 @@ class MainWindow(QMainWindow):
         # Sélection automatique intelligente si possible
         if len(columns) >= 2:
             # Auto-sélection de la première colonne pour X
-            self.combo_column_x.setCurrentIndex(1)  # Index 1 = première vraie colonne
+            self.combo_column_x.setCurrentIndex(1)
             # Auto-sélection de la deuxième colonne pour Y1
-            self.combo_column_y1.setCurrentIndex(2)  # Index 2 = deuxième vraie colonne
+            self.combo_column_y1.setCurrentIndex(2)
 
         logger.info(f"🎯 Available columns for charts: {columns}")
 
@@ -721,7 +755,7 @@ class MainWindow(QMainWindow):
                             is not pd.NaT
                         ):
                             date_columns.append(col)
-                    except:
+                    except Exception:
                         continue
 
             # Filtrage par dates si une colonne de date est trouvée
@@ -750,7 +784,8 @@ class MainWindow(QMainWindow):
                     logger.warning(f"⚠️ Unable to filter by dates: {e}")
             else:
                 logger.info(
-                    "ℹ️ No date column detected, displaying without " "time filter"
+                    "ℹ️ No date column detected, displaying without "
+                    "time filter"
                 )
 
             if filtered_df.empty:
@@ -772,7 +807,9 @@ class MainWindow(QMainWindow):
                     y_columns.append(y_col)
 
             if not x_column or x_column.startswith("--") or not y_columns:
-                logger.debug(f"Selection invalide: X='{x_column}', Y={y_columns}")
+                logger.debug(
+                    f"Selection invalide: X='{x_column}', Y={y_columns}"
+                )
                 return  # Retour silencieux pour éviter les messages répétitifs
 
             # === GÉNÉRATION DU GRAPHIQUE ===
@@ -824,7 +861,8 @@ class MainWindow(QMainWindow):
                     # Conversion du type pour matplotlib
                     matplotlib_type = self.get_chart_type()
                     logger.debug(
-                        f"Type matplotlib: '{matplotlib_type}' pour " f"colonne {y_col}"
+                        f"Type matplotlib: '{matplotlib_type}' pour "
+                        f"colonne {y_col}"
                     )
 
                     if matplotlib_type == "line":
@@ -839,7 +877,7 @@ class MainWindow(QMainWindow):
                         )
                     elif matplotlib_type == "bar":
                         # Pour les barres multiples sur le même axe, décalage
-                        bar_width = 0.35  # Largeur réduite pour permettre les groupes
+                        bar_width = 0.35
                         x_pos = range(len(x_data))
                         offset = (i - 0.5) * bar_width
                         ax1.bar(
@@ -864,7 +902,9 @@ class MainWindow(QMainWindow):
                         )
 
                 except Exception as e:
-                    logger.warning(f"⚠️ Error for column {y_col} (left axis): {e}")
+                    logger.warning(
+                        f"⚠️ Error for column {y_col} (left axis): {e}"
+                    )
                     continue
 
             # === TRACÉ DES SÉRIES SUR L'AXE DROIT ===
@@ -921,7 +961,9 @@ class MainWindow(QMainWindow):
                             )
 
                     except Exception as e:
-                        logger.warning(f"⚠️ Error for column {y_col} (right axis): {e}")
+                        logger.warning(
+                            f"⚠️ Error for column {y_col} (right axis): {e}"
+                        )
                         continue
 
             # === CONFIGURATION DU GRAPHIQUE ===
@@ -959,7 +1001,9 @@ class MainWindow(QMainWindow):
             # === LÉGENDES COMBINÉES ===
             # Récupération des légendes des deux axes
             lines1, labels1 = ax1.get_legend_handles_labels()
-            lines2, labels2 = ax2.get_legend_handles_labels() if ax2 else ([], [])
+            lines2, labels2 = (
+                ax2.get_legend_handles_labels() if ax2 else ([], [])
+            )
 
             # Combinaison des légendes - TOUJOURS afficher si on a des séries
             if lines1 or lines2:
@@ -986,6 +1030,7 @@ class MainWindow(QMainWindow):
             self.figure.tight_layout()
             self.canvas.draw()
 
+            # fmt: off
             logger.info(
                 f"📈 Chart generated: {len(y_columns)} series, "
                 f"{len(filtered_df)} points"
@@ -995,7 +1040,9 @@ class MainWindow(QMainWindow):
             logger.error(f"❌ Error generating custom chart: {e}")
             self.show_error(f"Chart generation error: {e}")
 
-    def update_connection_status(self, connected: bool, info: Optional[dict] = None):
+    def update_connection_status(
+        self, connected: bool, info: Optional[dict] = None
+    ):
         """Update connection status"""
         if connected:
             self.lbl_connection.setText(self.tr("🟢 Connected"))
@@ -1007,7 +1054,9 @@ class MainWindow(QMainWindow):
                 self.lbl_connection.setToolTip(tooltip)
         else:
             self.lbl_connection.setText(self.tr("🔴 Disconnected"))
-            self.lbl_connection.setToolTip(self.tr("Database connection failed"))
+            self.lbl_connection.setToolTip(
+                self.tr("Database connection failed")
+            )
 
     def update_view_info(self, view_name: str, info: dict):
         """Update information for selected VIEW"""
@@ -1027,7 +1076,9 @@ class MainWindow(QMainWindow):
                     info_text += f"  • {col['name']} ({col['type']})\n"
 
                 if len(columns) > 10:
-                    info_text += f"  ... and {len(columns) - 10} other columns\n"
+                    info_text += (
+                        f"  ... and {len(columns) - 10} other columns\n"
+                    )
 
             self.info_label.setText(info_text)
 

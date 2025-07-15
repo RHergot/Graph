@@ -6,10 +6,20 @@ import logging
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
-from PySide6.QtWidgets import (QComboBox, QDialog, QGroupBox, QHBoxLayout,
-                               QLineEdit, QListWidget, QMessageBox,
-                               QPushButton, QTabWidget, QTextEdit, QVBoxLayout,
-                               QWidget)
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLineEdit,
+    QListWidget,
+    QMessageBox,
+    QPushButton,
+    QTabWidget,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +75,10 @@ class SQLSyntaxHighlighter(QSyntaxHighlighter):
 
         for pattern, format in self.highlighting_rules:
             for match in re.finditer(pattern, text, re.IGNORECASE):
-                self.setFormat(match.start(), match.end() - match.start(), format)
+                # fmt: off
+                self.setFormat(
+                    match.start(), match.end() - match.start(), format
+                )
 
 
 class ViewManagerDialog(QDialog):
@@ -197,15 +210,23 @@ class ViewManagerDialog(QDialog):
         """Valide la syntaxe SQL"""
         sql = self.sql_editor.toPlainText().strip()
         if not sql:
-            QMessageBox.warning(self, "Attention", "Veuillez saisir une requête SQL")
+            # fmt: off
+            QMessageBox.warning(
+                self, "Attention", "Veuillez saisir une requête SQL"
+            )
             return
 
         try:
             test_query = f"SELECT * FROM ({sql}) AS test_query LIMIT 0"
             self.database_manager.execute_query(test_query)
-            QMessageBox.information(self, "Validation", "✅ Syntaxe SQL valide")
+            QMessageBox.information(
+                self, "Validation", "✅ Syntaxe SQL valide"
+            )
         except Exception as e:
-            QMessageBox.critical(self, "Erreur SQL", f"❌ Erreur de syntaxe:\n{str(e)}")
+            # fmt: off
+            QMessageBox.critical(
+                self, "Erreur SQL", f"❌ Erreur de syntaxe:\n{str(e)}"
+            )
 
     def create_view(self):
         """Crée une nouvelle VIEW"""
@@ -420,7 +441,10 @@ class ViewManagerDialog(QDialog):
 
             self.btn_create.setText("🔄 Mettre à jour VIEW")
             self.btn_create.clicked.disconnect()
-            self.btn_create.clicked.connect(lambda: self.update_view(view_name))
+            # fmt: off
+            self.btn_create.clicked.connect(
+                lambda: self.update_view(view_name)
+            )
 
         except Exception as e:
             QMessageBox.critical(

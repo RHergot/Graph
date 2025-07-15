@@ -99,9 +99,7 @@ class MainController(QObject):
             if " (" in view_name:
                 view_name = view_name.split(" (")[0]
 
-            if (
-                not view_name or view_name == "Aucun rapport disponible"
-            ):
+            if not view_name or view_name == "Aucun rapport disponible":
                 self.main_window.show_warning(
                     "Veuillez sélectionner un rapport valide"
                 )
@@ -173,9 +171,7 @@ class MainController(QObject):
         self.current_info_worker = ViewInfoWorker(
             self.analysis_engine, view_name
         )
-        self.current_info_worker.finished.connect(
-            self.on_view_info_received
-        )
+        self.current_info_worker.finished.connect(self.on_view_info_received)
         self.current_info_worker.error.connect(self.on_view_info_error)
         self.current_info_worker.start()
 
