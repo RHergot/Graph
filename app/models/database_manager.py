@@ -119,7 +119,7 @@ class DatabaseManager:
             logger.error(f"❌ Erreur structure VIEW {view_name}: {e}")
             raise ViewNotFoundError(f"Impossible d'accéder à la VIEW {view_name}: {e}")
     
-    def execute_query(self, query, params: Dict = None) -> pd.DataFrame:
+    def execute_query(self, query, params: Optional[Dict] = None) -> pd.DataFrame:
         """Exécution sécurisée avec gestion erreurs et timeout"""
         try:
             with self.engine.connect() as conn:

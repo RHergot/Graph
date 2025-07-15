@@ -14,6 +14,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import pandas as pd
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -472,10 +473,10 @@ class MainWindow(QMainWindow):
             display_limit = 1000
             display_df = dataframe.head(display_limit)
             
-            # Remplissage des données
-            for row_idx, row in display_df.iterrows():
+            # Remplissage des données - Using efficient itertuples instead of iterrows
+            for row_data in display_df.itertuples(index=False, name=None):
                 items = []
-                for col_val in row:
+                for col_val in row_data:
                     # Formatage des valeurs
                     if pd.isna(col_val):
                         display_val = ""
@@ -818,7 +819,7 @@ class MainWindow(QMainWindow):
             logger.error(f"❌ Error generating custom chart: {e}")
             self.show_error(f"Chart generation error: {e}")
     
-    def update_connection_status(self, connected: bool, info: dict = None):
+    def update_connection_status(self, connected: bool, info: Optional[dict] = None):
         """Update connection status"""
         if connected:
             self.lbl_connection.setText(self.tr("🟢 Connected"))

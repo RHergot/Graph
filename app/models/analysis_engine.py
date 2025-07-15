@@ -35,8 +35,8 @@ class AnalysisEngine:
         """Retourne la liste des analyses disponibles"""
         return self.available_views
     
-    def run_analysis(self, view_name: str, filters: Dict = None, 
-                    aggregations: Dict = None, limit: int = None) -> pd.DataFrame:
+    def run_analysis(self, view_name: str, filters: Optional[Dict] = None, 
+                    aggregations: Optional[Dict] = None, limit: Optional[int] = None) -> pd.DataFrame:
         """
         Exécute une analyse sur une VIEW avec filtres optionnels
         
@@ -73,8 +73,8 @@ class AnalysisEngine:
         """Valide que la VIEW existe dans la liste disponible"""
         return any(view['name'] == view_name for view in self.available_views)
     
-    def _build_query(self, view_name: str, filters: Dict = None, 
-                    aggregations: Dict = None, limit: int = None) -> str:
+    def _build_query(self, view_name: str, filters: Optional[Dict] = None, 
+                    aggregations: Optional[Dict] = None, limit: Optional[int] = None) -> str:
         """Construit la requête SQL dynamique"""
         
         # Base de la requête
@@ -143,7 +143,7 @@ class AnalysisEngine:
         
         return " AND ".join(conditions)
     
-    def _find_date_column(self, view_name: str = None) -> Optional[str]:
+    def _find_date_column(self, view_name: Optional[str] = None) -> Optional[str]:
         """Trouve la première colonne de type date dans la VIEW"""
         if not view_name:
             return None
