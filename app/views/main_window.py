@@ -7,7 +7,9 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+)
 from matplotlib.figure import Figure
 from PySide6.QtCore import QDateTime, Qt, Signal
 from PySide6.QtGui import QStandardItem, QStandardItemModel
@@ -149,7 +151,9 @@ class MainWindow(QMainWindow):
         self.btn_generate = QPushButton(self.tr("🔄 Generate Analysis"))
         self.btn_generate.setMinimumHeight(40)
         self.btn_generate.setMinimumWidth(150)
-        self.btn_generate.setToolTip(self.tr("Run analysis with current parameters"))
+        self.btn_generate.setToolTip(
+            self.tr("Run analysis with current parameters")
+        )
         layout.addWidget(self.btn_generate)
 
         self.btn_refresh = QPushButton(self.tr("♻️ Refresh"))
@@ -205,7 +209,9 @@ class MainWindow(QMainWindow):
         # Configuration affichage
         self.table_view.setAlternatingRowColors(True)
         self.table_view.setSortingEnabled(True)
-        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.table_view.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Interactive
+        )
         self.table_view.setSelectionBehavior(QTableView.SelectRows)
 
         self.tab_widget.addTab(self.table_view, self.tr("📋 Data"))
@@ -217,7 +223,9 @@ class MainWindow(QMainWindow):
 
         # === CONTRÔLES GRAPHIQUE SUR UNE LIGNE ===
         controls_frame = QWidget()
-        controls_layout = QHBoxLayout(controls_frame)  # Une seule ligne horizontale
+        controls_layout = QHBoxLayout(
+            controls_frame
+        )  # Une seule ligne horizontale
         controls_frame.setMaximumHeight(60)
 
         # Type de graphique
@@ -259,7 +267,9 @@ class MainWindow(QMainWindow):
         controls_layout.addWidget(QLabel(self.tr("📊 Y2:")))
         self.combo_column_y2 = QComboBox()
         self.combo_column_y2.setMinimumWidth(150)
-        self.combo_column_y2.setToolTip(self.tr("Optional column for second Y axis"))
+        self.combo_column_y2.setToolTip(
+            self.tr("Optional column for second Y axis")
+        )
         controls_layout.addWidget(self.combo_column_y2)
 
         controls_layout.addSpacing(10)
@@ -268,7 +278,9 @@ class MainWindow(QMainWindow):
         controls_layout.addWidget(QLabel(self.tr("📉 Y3:")))
         self.combo_column_y3 = QComboBox()
         self.combo_column_y3.setMinimumWidth(150)
-        self.combo_column_y3.setToolTip(self.tr("Optional column for third Y axis"))
+        self.combo_column_y3.setToolTip(
+            self.tr("Optional column for third Y axis")
+        )
         controls_layout.addWidget(self.combo_column_y3)
 
         controls_layout.addSpacing(20)
@@ -287,7 +299,9 @@ class MainWindow(QMainWindow):
 
         self.checkbox_auto_refresh = QCheckBox(self.tr("Auto"))
         self.checkbox_auto_refresh.setChecked(True)
-        self.checkbox_auto_refresh.setToolTip(self.tr("Automatic chart refresh"))
+        self.checkbox_auto_refresh.setToolTip(
+            self.tr("Automatic chart refresh")
+        )
         controls_layout.addWidget(self.checkbox_auto_refresh)
 
         controls_layout.addStretch()
@@ -306,7 +320,9 @@ class MainWindow(QMainWindow):
         info_widget = QWidget()
         layout = QVBoxLayout(info_widget)
 
-        self.info_label = QLabel(self.tr("ℹ️ Select a report to see information"))
+        self.info_label = QLabel(
+            self.tr("ℹ️ Select a report to see information")
+        )
         self.info_label.setWordWrap(True)
         self.info_label.setAlignment(Qt.AlignTop)
         layout.addWidget(self.info_label)
@@ -344,14 +360,18 @@ class MainWindow(QMainWindow):
         self.date_end.dateTimeChanged.connect(self.on_filters_changed)
 
         # Changement type graphique
-        self.combo_chart_type.currentTextChanged.connect(self.on_chart_type_changed)
+        self.combo_chart_type.currentTextChanged.connect(
+            self.on_chart_type_changed
+        )
 
         # === NOUVEAUX CONTRÔLES GRAPHIQUES ===
         # Génération manuelle de graphique
         self.btn_generate_chart.clicked.connect(self.on_generate_chart_clicked)
 
         # Changements de colonnes (actualisation automatique si activée)
-        self.combo_column_x.currentTextChanged.connect(self.on_column_selection_changed)
+        self.combo_column_x.currentTextChanged.connect(
+            self.on_column_selection_changed
+        )
         self.combo_column_y1.currentTextChanged.connect(
             self.on_column_selection_changed
         )
@@ -404,7 +424,9 @@ class MainWindow(QMainWindow):
             not self.combo_column_x.currentText()
             or not self.combo_column_y1.currentText()
         ):
-            self.show_warning(self.tr("Please select at least X and Y1 columns"))
+            self.show_warning(
+                self.tr("Please select at least X and Y1 columns")
+            )
             return
 
         # Génération du graphique avec les colonnes sélectionnées
@@ -465,7 +487,9 @@ class MainWindow(QMainWindow):
             return
 
         for view_info in views_list:
-            display_text = f"{view_info['name']} ({view_info['column_count']} columns)"
+            display_text = (
+                f"{view_info['name']} ({view_info['column_count']} columns)"
+            )
             self.combo_views.addItem(display_text, view_info["name"])
 
         self.lbl_view_count.setText(self.tr(f"{len(views_list)} reports"))
@@ -511,7 +535,7 @@ class MainWindow(QMainWindow):
             display_limit = 1000
             display_df = dataframe.head(display_limit)
 
-            # Remplissage des données - Using efficient itertuples instead of iterrows
+            # Remplissage des données - Using efficient itertuples instead of
             for row_data in display_df.itertuples(index=False, name=None):
                 items = []
                 for col_val in row_data:
@@ -544,7 +568,8 @@ class MainWindow(QMainWindow):
             self.btn_export.setEnabled(True)
 
             # === GÉNÉRATION AUTOMATIQUE DU GRAPHIQUE ===
-            # Si l'auto-refresh est activé et que des colonnes sont sélectionnées
+            # Si l'auto-refresh est activé et que des colonnes sont
+            # sélectionnées
             if (
                 hasattr(self, "checkbox_auto_refresh")
                 and self.checkbox_auto_refresh.isChecked()
@@ -593,7 +618,11 @@ class MainWindow(QMainWindow):
                 elif (
                     chart_type == "pie" and len(dataframe) <= 20
                 ):  # Limite pour lisibilité
-                    ax.pie(dataframe[y_col], labels=dataframe[x_col], autopct="%1.1f%%")
+                    ax.pie(
+                        dataframe[y_col],
+                        labels=dataframe[x_col],
+                        autopct="%1.1f%%",
+                    )
                 elif chart_type == "hist":
                     ax.hist(dataframe[y_col], bins=20)
                 else:
@@ -676,9 +705,13 @@ class MainWindow(QMainWindow):
         # Sélection automatique intelligente si possible
         if len(columns) >= 2:
             # Auto-sélection de la première colonne pour X
-            self.combo_column_x.setCurrentIndex(1)  # Index 1 = première vraie colonne
+            self.combo_column_x.setCurrentIndex(
+                1
+            )  # Index 1 = première vraie colonne
             # Auto-sélection de la deuxième colonne pour Y1
-            self.combo_column_y1.setCurrentIndex(2)  # Index 2 = deuxième vraie colonne
+            self.combo_column_y1.setCurrentIndex(
+                2
+            )  # Index 2 = deuxième vraie colonne
 
         logger.info(f"🎯 Available columns for charts: {columns}")
 
@@ -713,7 +746,7 @@ class MainWindow(QMainWindow):
                             is not pd.NaT
                         ):
                             date_columns.append(col)
-                    except:
+                    except Exception:
                         continue
 
             # Filtrage par dates si une colonne de date est trouvée
@@ -735,12 +768,16 @@ class MainWindow(QMainWindow):
                     filtered_df = filtered_df[mask]
 
                     logger.info(
-                        f"📅 Date filtering: {len(filtered_df)} rows retained on column '{date_col}'"
+                        f"📅 Date filtering: {len(filtered_df)} rows retained "
+                        f"on column '{date_col}'"
                     )
                 except Exception as e:
                     logger.warning(f"⚠️ Unable to filter by dates: {e}")
             else:
-                logger.info("ℹ️ No date column detected, displaying without time filter")
+                logger.info(
+                    "ℹ️ No date column detected, displaying without time "
+                    "filter"
+                )
 
             if filtered_df.empty:
                 self.show_error(self.tr("No data in selected date range"))
@@ -761,7 +798,9 @@ class MainWindow(QMainWindow):
                     y_columns.append(y_col)
 
             if not x_column or x_column.startswith("--") or not y_columns:
-                logger.debug(f"Selection invalide: X='{x_column}', Y={y_columns}")
+                logger.debug(
+                    f"Selection invalide: X='{x_column}', Y={y_columns}"
+                )
                 return  # Retour silencieux pour éviter les messages répétitifs
 
             # === GÉNÉRATION DU GRAPHIQUE ===
@@ -772,7 +811,12 @@ class MainWindow(QMainWindow):
             chart_type = self.combo_chart_type.currentText()
             logger.debug(f"Type de graphique sélectionné: '{chart_type}'")
 
-            colors = ["#2E86AB", "#A23B72", "#F18F01", "#C73E1D"]  # Palette de couleurs
+            colors = [
+                "#2E86AB",
+                "#A23B72",
+                "#F18F01",
+                "#C73E1D",
+            ]  # Palette de couleurs
 
             # Variables pour gérer les axes multiples
             ax2 = None  # Axe secondaire (droite)
@@ -808,7 +852,8 @@ class MainWindow(QMainWindow):
                     # Conversion du type pour matplotlib
                     matplotlib_type = self.get_chart_type()
                     logger.debug(
-                        f"Type matplotlib: '{matplotlib_type}' pour colonne {y_col}"
+                        f"Type matplotlib: '{matplotlib_type}' pour colonne "
+                        f"{y_col}"
                     )
 
                     if matplotlib_type == "line":
@@ -823,7 +868,9 @@ class MainWindow(QMainWindow):
                         )
                     elif matplotlib_type == "bar":
                         # Pour les barres multiples sur le même axe, décalage
-                        bar_width = 0.35  # Largeur réduite pour permettre les groupes
+                        bar_width = (
+                            0.35  # Largeur réduite pour permettre les groupes
+                        )
                         x_pos = range(len(x_data))
                         offset = (i - 0.5) * bar_width
                         ax1.bar(
@@ -848,7 +895,9 @@ class MainWindow(QMainWindow):
                         )
 
                 except Exception as e:
-                    logger.warning(f"⚠️ Error for column {y_col} (left axis): {e}")
+                    logger.warning(
+                        f"⚠️ Error for column {y_col} (left axis): {e}"
+                    )
                     continue
 
             # === TRACÉ DES SÉRIES SUR L'AXE DROIT ===
@@ -905,7 +954,9 @@ class MainWindow(QMainWindow):
                             )
 
                     except Exception as e:
-                        logger.warning(f"⚠️ Error for column {y_col} (right axis): {e}")
+                        logger.warning(
+                            f"⚠️ Error for column {y_col} (right axis): {e}"
+                        )
                         continue
 
             # === CONFIGURATION DU GRAPHIQUE ===
@@ -943,7 +994,9 @@ class MainWindow(QMainWindow):
             # === LÉGENDES COMBINÉES ===
             # Récupération des légendes des deux axes
             lines1, labels1 = ax1.get_legend_handles_labels()
-            lines2, labels2 = ax2.get_legend_handles_labels() if ax2 else ([], [])
+            lines2, labels2 = (
+                ax2.get_legend_handles_labels() if ax2 else ([], [])
+            )
 
             # Combinaison des légendes - TOUJOURS afficher si on a des séries
             if lines1 or lines2:
@@ -971,23 +1024,31 @@ class MainWindow(QMainWindow):
             self.canvas.draw()
 
             logger.info(
-                f"📈 Chart generated: {len(y_columns)} series, {len(filtered_df)} points"
+                f"📈 Chart generated: {len(y_columns)} series, "
+                f"{len(filtered_df)} points"
             )
 
         except Exception as e:
             logger.error(f"❌ Error generating custom chart: {e}")
             self.show_error(f"Chart generation error: {e}")
 
-    def update_connection_status(self, connected: bool, info: Optional[dict] = None):
+    def update_connection_status(
+        self, connected: bool, info: Optional[dict] = None
+    ):
         """Update connection status"""
         if connected:
             self.lbl_connection.setText(self.tr("🟢 Connected"))
             if info:
-                tooltip = f"Host: {info.get('host', 'N/A')}\nDB: {info.get('database', 'N/A')}"
+                tooltip = (
+                    f"Host: {info.get('host', 'N/A')}\n"
+                    f"DB: {info.get('database', 'N/A')}"
+                )
                 self.lbl_connection.setToolTip(tooltip)
         else:
             self.lbl_connection.setText(self.tr("🔴 Disconnected"))
-            self.lbl_connection.setToolTip(self.tr("Database connection failed"))
+            self.lbl_connection.setToolTip(
+                self.tr("Database connection failed")
+            )
 
     def update_view_info(self, view_name: str, info: dict):
         """Update information for selected VIEW"""
@@ -1007,7 +1068,9 @@ class MainWindow(QMainWindow):
                     info_text += f"  • {col['name']} ({col['type']})\n"
 
                 if len(columns) > 10:
-                    info_text += f"  ... and {len(columns) - 10} other columns\n"
+                    info_text += (
+                        f"  ... and {len(columns) - 10} other columns\n"
+                    )
 
             self.info_label.setText(info_text)
 

@@ -33,14 +33,17 @@ class DatabaseManager:
         """Initialise la connexion à la base de données"""
         try:
             self.engine = create_engine(
-                self.config.get_connection_string(), **self.config.get_engine_options()
+                self.config.get_connection_string(),
+                **self.config.get_engine_options(),
             )
             self._test_connection()
             logger.info("✅ Database connection established")
 
         except Exception as e:
             logger.error(f"❌ Erreur initialisation DB: {e}")
-            raise DatabaseConnectionError(f"Impossible d'initialiser la connexion: {e}")
+            raise DatabaseConnectionError(
+                f"Impossible d'initialiser la connexion: {e}"
+            )
 
     def _test_connection(self) -> bool:
         """Test de connexion à la base de données"""
@@ -70,7 +73,9 @@ class DatabaseManager:
             business_views = []
             for view in all_views:
                 # Patterns métier étendus
-                if view.startswith(("vw_", "report_", "view_", "ot_", "v_")) or any(
+                if view.startswith(
+                    ("vw_", "report_", "view_", "ot_", "v_")
+                ) or any(
                     pattern in view.lower()
                     for pattern in [
                         "actif",
@@ -93,18 +98,26 @@ class DatabaseManager:
                 try:
                     # Récupération colonnes pour description
                     columns = inspector.get_columns(view_name, schema=schema)
-                    col_names = [col["name"] for col in columns[:5]]  # Top 5 colonnes
+                    col_names = [
+                        col["name"] for col in columns[:5]
+                    ]  # Top 5 colonnes
 
                     views_info.append(
                         {
                             "name": view_name,
-                            "description": f"Analyse basée sur {view_name.replace('vw_', '').replace('_', ' ').title()}",
+                            "description": (
+                                f"Analyse basée sur "
+                                f"{view_name.replace('vw_', '')}"
+                                f".replace('_', ' ').title()"
+                            ),
                             "columns": col_names,
                             "column_count": len(columns),
                         }
                     )
                 except Exception as e:
-                    logger.warning(f"⚠️ Impossible d'analyser la VIEW {view_name}: {e}")
+                    logger.warning(
+                        f"⚠️ Impossible d'analyser la VIEW {view_name}: {e}"
+                    )
                     continue
 
             logger.info(f"📊 Found {len(views_info)} business VIEWs")
@@ -134,14 +147,20 @@ class DatabaseManager:
             }
         except SQLAlchemyError as e:
             logger.error(f"❌ Erreur structure VIEW {view_name}: {e}")
-            raise ViewNotFoundError(f"Impossible d'accéder à la VIEW {view_name}: {e}")
+            raise ViewNotFoundError(
+                f"Impossible d'accéder à la VIEW {view_name}: {e}"
+            )
 
-    def execute_query(self, query, params: Optional[Dict] = None) -> pd.DataFrame:
+    def execute_query(
+        self, query, params: Optional[Dict] = None
+    ) -> pd.DataFrame:
         """Exécution sécurisée avec gestion erreurs et timeout"""
         try:
             with self.engine.connect() as conn:
                 # Configuration timeout
-                conn = conn.execution_options(autocommit=True, compiled_cache={})
+                conn = conn.execution_options(
+                    autocommit=True, compiled_cache={}
+                )
 
                 # Exécution requête
                 if params:
@@ -153,7 +172,8 @@ class DatabaseManager:
                 max_rows = self.config.get_max_rows()
                 if len(df) > max_rows:
                     logger.warning(
-                        f"⚠️ Query returns {len(df)} rows, limiting to {max_rows}"
+                        f"⚠️ Query returns {len(df)} rows, limiting to "
+                        f"{max_rows}"
                     )
                     df = df.head(max_rows)
 
