@@ -159,15 +159,20 @@ class AnalysisEngine:
                 col_type = col.get('type', '').lower()
                 col_name = col.get('name', '').lower()
                 
-                # Types de dates PostgreSQL
+                # Types de dates PostgreSQL uniquement
                 if any(date_type in col_type for date_type in [
                     'date', 'timestamp', 'timestamptz', 'time'
                 ]):
                     date_columns.append(col['name'])
                 
-                # Noms courants de colonnes de dates
+                # Noms courants de colonnes de dates MAIS exclure strictement les métriques numériques
                 elif any(date_name in col_name for date_name in [
-                    'date', 'created', 'updated', 'periode', 'time', 'jour', 'heure'
+                    'date_', 'created_', 'updated_', 'periode_'
+                ]) and not any(numeric_name in col_name for numeric_name in [
+                    'heures_', 'duree_', '_total', '_moyenne', '_h', '_jours', 
+                    'delai_', 'cout_', 'taux_', 'nb_', 'moyenne_', 'moyen'
+                ]) and not any(metric_type in col_type for metric_type in [
+                    'numeric', 'integer', 'decimal', 'float', 'double'
                 ]):
                     date_columns.append(col['name'])
             

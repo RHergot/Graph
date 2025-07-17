@@ -37,7 +37,7 @@ SELECT
     ) as taux_disponibilite_pct
 FROM machine m
 LEFT JOIN ordre_travail ot ON m.id_machine = ot.machine_id 
-    AND ot.date_creation >= '2024-01-01'
+    AND DATE(ot.date_creation) >= '2024-01-01'
 LEFT JOIN maintenance mt ON ot.id_ot = mt.ot_id
 GROUP BY m.id_machine, m.nom, m.serial, m.modele, m.etat, m.localisation
 ORDER BY taux_disponibilite_pct DESC;
@@ -77,7 +77,7 @@ SELECT
 FROM machine m
 LEFT JOIN ordre_travail ot ON m.id_machine = ot.machine_id
 LEFT JOIN maintenance mt ON ot.id_ot = mt.ot_id
-    AND mt.date_debut_reelle >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '12 months')
+    AND DATE(mt.date_debut_reelle) >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '12 months')
 GROUP BY m.id_machine, m.nom, m.serial, m.modele
 HAVING COUNT(mt.id_maintenance) > 0 OR m.etat = 'EN_SERVICE'
 ORDER BY cout_total DESC;
@@ -132,13 +132,13 @@ SELECT
 FROM machine m
 INNER JOIN ordre_travail ot ON m.id_machine = ot.machine_id
 LEFT JOIN maintenance mt ON ot.id_ot = mt.ot_id
-WHERE ot.date_creation >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '6 months')
+WHERE DATE(ot.date_creation) >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '6 months')
 GROUP BY m.id_machine, m.nom, m.modele, ot.type, ot.priorite
 HAVING COUNT(*) >= 1
 ORDER BY delai_moyen_jours ASC, taux_completion_pct DESC;
 
 -- Commentaires
-COMMENT ON VIEW kpi_gmao_response_times IS 'KPI des temps de réponse et délais d\'intervention';
+COMMENT ON VIEW kpi_gmao_response_times IS 'KPI des temps de réponse et délais d''intervention';
 COMMENT ON COLUMN kpi_gmao_response_times.delai_moyen_jours IS 'Délai moyen entre création OT et début intervention';
 COMMENT ON COLUMN kpi_gmao_response_times.taux_completion_pct IS 'Taux de completion des ordres de travail en %';
 
@@ -167,7 +167,7 @@ SELECT
     CURRENT_DATE as date_maj
 FROM machine m
 LEFT JOIN ordre_travail ot ON m.id_machine = ot.machine_id
-    AND ot.date_creation >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '12 months')
+    AND DATE(ot.date_creation) >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '12 months')
 LEFT JOIN maintenance mt ON ot.id_ot = mt.ot_id;
 
 -- Commentaires
