@@ -1,0 +1,255 @@
+-- =====================================
+-- MODULE PURCHASES - VERSION SIMPLIFIÉE FONCTIONNELLE
+-- Adaptation au schéma réel GMAO sans erreurs PostgreSQL
+-- =====================================
+
+-- ====================
+-- KPI 1: PERFORMANCE DES FOURNISSEURS (SIMPLIFIÉ)
+-- ====================
+
+DROP VIEW IF EXISTS kpi_purchases_supplier_performance;
+CREATE VIEW kpi_purchases_supplier_performance AS
+SELECT 
+    f.id_fournisseur AS supplier_id,
+    f.nom AS supplier_name,
+    f.delai_livraison_moyen_j AS standard_delivery_days,
+    f.note_qualite AS supplier_rating,
+    TO_CHAR(TO_DATE(c.date_commande, 'YYYY-MM-DD'), 'YYYY-MM') AS period_month,
+    EXTRACT(YEAR FROM TO_DATE(c.date_commande, 'YYYY-MM-DD')) AS year,
+    EXTRACT(MONTH FROM TO_DATE(c.date_commande, 'YYYY-MM-DD')) AS month,
+    
+    -- Compteurs de commandes
+    COUNT(c.id_commande) AS total_orders,
+    COUNT(CASE WHEN c.statut = 'Livree' THEN 1 END) AS delivered_orders,
+    COUNT(CASE WHEN c.statut = 'Annulee' THEN 1 END) AS cancelled_orders,
+    COUNT(CASE WHEN c.statut IN ('Brouillon', 'Validee', 'Envoyee', 'Partielle') THEN 1 END) AS pending_orders,
+    
+    -- Valeurs financières
+    ROUND(SUM(c.total_ht)::NUMERIC, 2) AS total_order_value_eur,
+    ROUND(AVG(c.total_ht)::NUMERIC, 2) AS avg_order_value_eur,
+    ROUND(SUM(CASE WHEN c.statut = 'Livree' THEN c.total_ht ELSE 0 END)::NUMERIC, 2) AS delivered_value_eur,
+    
+    -- Délais de livraison (simplifiés, seulement si dates complètes)
+    CASE 
+        WHEN COUNT(CASE WHEN c.date_livraison_reelle IS NOT NULL THEN 1 END) > 0 THEN
+            ROUND(AVG(
+                CASE WHEN c.date_livraison_reelle IS NOT NULL AND c.date_commande IS NOT NULL THEN 
+                    (TO_DATE(c.date_livraison_reelle, 'YYYY-MM-DD') - TO_DATE(c.date_commande, 'YYYY-MM-DD'))
+                END
+            )::NUMERIC, 1)
+        ELSE NULL
+    END AS avg_delivery_days,
+    
+    -- Analyse des lignes de commande
+    COUNT(lc.id_ligne) AS total_line_items,
+    COUNT(CASE WHEN lc.statut_ligne = 'Complete' THEN 1 END) AS completed_line_items,
+    COUNT(CASE WHEN lc.quantite_recue < lc.quantite_commandee THEN 1 END) AS partial_deliveries,
+    ROUND(SUM(lc.quantite_commandee * lc.prix_unitaire_ht)::NUMERIC, 2) AS total_line_value_eur,
+    
+    -- Score de performance simplifié (0-100)
+    ROUND(
+        (
+            -- Fiabilité (60%) - Taux de commandes non annulées
+            (100 - COUNT(CASE WHEN c.statut = 'Annulee' THEN 1 END) * 100.0 / NULLIF(COUNT(c.id_commande), 1))::NUMERIC * 0.60 +
+            
+            -- Qualité fournisseur (40%)
+            COALESCE(f.note_qualite, 3) * 20 * 0.40
+        ),
+        1
+    ) AS performance_score,
+    
+    -- Classification de performance
+    CASE 
+        WHEN ROUND(
+            (
+                (100 - COUNT(CASE WHEN c.statut = 'Annulee' THEN 1 END) * 100.0 / NULLIF(COUNT(c.id_commande), 1))::NUMERIC * 0.60 +
+                COALESCE(f.note_qualite, 3) * 20 * 0.40
+            ),
+            1
+        ) >= 80 THEN 'EXCELLENT'
+        WHEN ROUND(
+            (
+                (100 - COUNT(CASE WHEN c.statut = 'Annulee' THEN 1 END) * 100.0 / NULLIF(COUNT(c.id_commande), 1))::NUMERIC * 0.60 +
+                COALESCE(f.note_qualite, 3) * 20 * 0.40
+            ),
+            1
+        ) >= 60 THEN 'GOOD'
+        WHEN ROUND(
+            (
+                (100 - COUNT(CASE WHEN c.statut = 'Annulee' THEN 1 END) * 100.0 / NULLIF(COUNT(c.id_commande), 1))::NUMERIC * 0.60 +
+                COALESCE(f.note_qualite, 3) * 20 * 0.40
+            ),
+            1
+        ) >= 40 THEN 'AVERAGE'
+        ELSE 'POOR'
+    END AS performance_category,
+    
+    -- Métadonnées
+    MAX(CASE WHEN c.date_livraison_reelle IS NOT NULL THEN TO_DATE(c.date_livraison_reelle, 'YYYY-MM-DD') END) AS last_delivery_date,
+    CURRENT_DATE AS analysis_date
+    
+FROM commande c
+INNER JOIN fournisseur f ON c.fournisseur_id = f.id_fournisseur
+LEFT JOIN ligne_commande lc ON c.id_commande = lc.commande_id
+
+WHERE TO_DATE(c.date_commande, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '12 months'
+
+GROUP BY 
+    f.id_fournisseur, f.nom, f.delai_livraison_moyen_j, f.note_qualite,
+    TO_CHAR(TO_DATE(c.date_commande, 'YYYY-MM-DD'), 'YYYY-MM'),
+    EXTRACT(YEAR FROM TO_DATE(c.date_commande, 'YYYY-MM-DD')),
+    EXTRACT(MONTH FROM TO_DATE(c.date_commande, 'YYYY-MM-DD'))
+
+ORDER BY 
+    period_month DESC,
+    performance_score DESC,
+    total_order_value_eur DESC;
+
+-- ====================
+-- KPI 2: ANALYSE DES COÛTS D'ACHAT (SIMPLIFIÉ)
+-- ====================
+
+DROP VIEW IF EXISTS kpi_purchases_cost_analysis;
+CREATE VIEW kpi_purchases_cost_analysis AS
+SELECT 
+    p.categorie AS product_category,
+    f.nom AS main_supplier,
+    TO_CHAR(TO_DATE(c.date_commande, 'YYYY-MM-DD'), 'YYYY-MM') AS period_month,
+    
+    -- Volumes d'achat
+    COUNT(DISTINCT c.id_commande) AS purchase_orders_count,
+    COUNT(lc.id_ligne) AS line_items_count,
+    SUM(lc.quantite_commandee) AS total_quantity_purchased,
+    
+    -- Valeurs d'achat
+    ROUND(SUM(lc.quantite_commandee * lc.prix_unitaire_ht)::NUMERIC, 2) AS total_purchase_value_eur,
+    ROUND(AVG(lc.prix_unitaire_ht)::NUMERIC, 2) AS avg_unit_price_eur,
+    ROUND(SUM(lc.quantite_commandee * lc.prix_unitaire_ht) / NULLIF(SUM(lc.quantite_commandee), 0)::NUMERIC, 2) AS weighted_avg_price_eur,
+    
+    -- Analyse des frais de port
+    COUNT(CASE WHEN c.frais_port > 0 THEN 1 END) AS orders_with_shipping,
+    ROUND(AVG(c.frais_port)::NUMERIC, 2) AS avg_shipping_cost,
+    ROUND(SUM(c.frais_port)::NUMERIC, 2) AS total_shipping_cost,
+    
+    -- Concentration des achats
+    COUNT(DISTINCT c.fournisseur_id) AS suppliers_count,
+    
+    -- Analyse de la saisonnalité
+    CASE 
+        WHEN EXTRACT(MONTH FROM TO_DATE(c.date_commande, 'YYYY-MM-DD')) IN (12, 1, 2) THEN 'WINTER'
+        WHEN EXTRACT(MONTH FROM TO_DATE(c.date_commande, 'YYYY-MM-DD')) IN (3, 4, 5) THEN 'SPRING'
+        WHEN EXTRACT(MONTH FROM TO_DATE(c.date_commande, 'YYYY-MM-DD')) IN (6, 7, 8) THEN 'SUMMER'
+        ELSE 'AUTUMN'
+    END AS season,
+    
+    -- Optimisation potentielle
+    CASE 
+        WHEN COUNT(DISTINCT c.fournisseur_id) = 1 THEN 'MONOPOLY_RISK'
+        WHEN COUNT(DISTINCT c.fournisseur_id) >= 3 THEN 'COMPETITIVE'
+        WHEN ROUND(AVG(c.frais_port)::NUMERIC, 2) > 50 THEN 'HIGH_SHIPPING_COSTS'
+        ELSE 'OPTIMIZED'
+    END AS optimization_opportunity,
+    
+    -- Métadonnées
+    COUNT(CASE WHEN c.statut IN ('Livree') THEN 1 END) AS delivered_orders,
+    ROUND(AVG(c.total_ht)::NUMERIC, 2) AS avg_order_total_eur
+    
+FROM commande c
+INNER JOIN ligne_commande lc ON c.id_commande = lc.commande_id
+INNER JOIN piece p ON lc.piece_id = p.id_piece
+INNER JOIN fournisseur f ON c.fournisseur_id = f.id_fournisseur
+
+WHERE TO_DATE(c.date_commande, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '24 months'
+  AND c.statut IN ('Validee', 'Envoyee', 'Partielle', 'Livree', 'Brouillon')
+
+GROUP BY 
+    p.categorie, f.nom,
+    TO_CHAR(TO_DATE(c.date_commande, 'YYYY-MM-DD'), 'YYYY-MM'),
+    CASE 
+        WHEN EXTRACT(MONTH FROM TO_DATE(c.date_commande, 'YYYY-MM-DD')) IN (12, 1, 2) THEN 'WINTER'
+        WHEN EXTRACT(MONTH FROM TO_DATE(c.date_commande, 'YYYY-MM-DD')) IN (3, 4, 5) THEN 'SPRING'
+        WHEN EXTRACT(MONTH FROM TO_DATE(c.date_commande, 'YYYY-MM-DD')) IN (6, 7, 8) THEN 'SUMMER'
+        ELSE 'AUTUMN'
+    END
+
+ORDER BY 
+    period_month DESC,
+    total_purchase_value_eur DESC;
+
+-- ====================
+-- KPI 3: DÉLAIS D'APPROVISIONNEMENT (SIMPLIFIÉ)
+-- ====================
+
+DROP VIEW IF EXISTS kpi_purchases_lead_times;
+CREATE VIEW kpi_purchases_lead_times AS
+SELECT 
+    f.id_fournisseur AS supplier_id,
+    f.nom AS supplier_name,
+    p.categorie AS product_category,
+    p.id_piece AS article_id,
+    p.nom AS article_name,
+    
+    -- Compteurs sur les 6 derniers mois
+    COUNT(c.id_commande) AS orders_count_6m,
+    
+    -- Délais moyens (quand les dates sont disponibles)
+    CASE 
+        WHEN COUNT(CASE WHEN c.date_livraison_reelle IS NOT NULL THEN 1 END) > 0 THEN
+            ROUND(AVG(
+                CASE WHEN c.date_livraison_reelle IS NOT NULL AND c.date_commande IS NOT NULL THEN 
+                    (TO_DATE(c.date_livraison_reelle, 'YYYY-MM-DD') - TO_DATE(c.date_commande, 'YYYY-MM-DD'))
+                END
+            )::NUMERIC, 1)
+        ELSE NULL
+    END AS avg_total_lead_time_days,
+    
+    -- Délai standard du fournisseur pour comparaison
+    f.delai_livraison_moyen_j AS supplier_standard_days,
+    
+    -- Classification globale du délai
+    CASE 
+        WHEN COUNT(CASE WHEN c.date_livraison_reelle IS NOT NULL THEN 1 END) = 0 THEN 'NO_DATA'
+        WHEN ROUND(AVG(
+            CASE WHEN c.date_livraison_reelle IS NOT NULL AND c.date_commande IS NOT NULL THEN 
+                (TO_DATE(c.date_livraison_reelle, 'YYYY-MM-DD') - TO_DATE(c.date_commande, 'YYYY-MM-DD'))
+            END
+        )::NUMERIC, 1) <= 7 THEN 'FAST'
+        WHEN ROUND(AVG(
+            CASE WHEN c.date_livraison_reelle IS NOT NULL AND c.date_commande IS NOT NULL THEN 
+                (TO_DATE(c.date_livraison_reelle, 'YYYY-MM-DD') - TO_DATE(c.date_commande, 'YYYY-MM-DD'))
+            END
+        )::NUMERIC, 1) <= 14 THEN 'STANDARD'
+        WHEN ROUND(AVG(
+            CASE WHEN c.date_livraison_reelle IS NOT NULL AND c.date_commande IS NOT NULL THEN 
+                (TO_DATE(c.date_livraison_reelle, 'YYYY-MM-DD') - TO_DATE(c.date_commande, 'YYYY-MM-DD'))
+            END
+        )::NUMERIC, 1) <= 30 THEN 'SLOW'
+        ELSE 'VERY_SLOW'
+    END AS lead_time_category,
+    
+    -- Métadonnées
+    MAX(CASE WHEN c.date_livraison_reelle IS NOT NULL THEN TO_DATE(c.date_livraison_reelle, 'YYYY-MM-DD') END) AS last_delivery_date,
+    ROUND(AVG(lc.quantite_commandee)::NUMERIC, 1) AS avg_order_quantity,
+    ROUND(SUM(lc.quantite_commandee * lc.prix_unitaire_ht)::NUMERIC, 2) AS total_value_eur
+    
+FROM commande c
+INNER JOIN fournisseur f ON c.fournisseur_id = f.id_fournisseur
+INNER JOIN ligne_commande lc ON c.id_commande = lc.commande_id
+INNER JOIN piece p ON lc.piece_id = p.id_piece
+
+WHERE TO_DATE(c.date_commande, 'YYYY-MM-DD') >= CURRENT_DATE - INTERVAL '6 months'
+
+GROUP BY 
+    f.id_fournisseur, f.nom, f.delai_livraison_moyen_j,
+    p.categorie, p.id_piece, p.nom
+
+HAVING COUNT(c.id_commande) >= 1  -- Au moins 1 commande
+
+ORDER BY 
+    avg_total_lead_time_days DESC NULLS LAST,
+    total_value_eur DESC;
+
+-- Commentaires
+COMMENT ON VIEW kpi_purchases_supplier_performance IS 'Performance des fournisseurs - Version GMAO simplifiée';
+COMMENT ON VIEW kpi_purchases_cost_analysis IS 'Analyse des coûts d''achat - Version GMAO simplifiée';
+COMMENT ON VIEW kpi_purchases_lead_times IS 'Délais d''approvisionnement - Version GMAO simplifiée';
