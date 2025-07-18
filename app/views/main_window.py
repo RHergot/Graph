@@ -15,6 +15,9 @@ from matplotlib.figure import Figure
 import pandas as pd
 import logging
 
+# Import du constructeur de vues
+from .views_construct import AdvancedViewCreatorDialog
+
 logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
@@ -145,6 +148,13 @@ class MainWindow(QMainWindow):
         self.btn_export.setEnabled(False)
         self.btn_export.setToolTip(self.tr("Export current data"))
         layout.addWidget(self.btn_export)
+        
+        # Bouton pour le constructeur de vues
+        self.btn_view_constructor = QPushButton(self.tr("🔧 View Constructor"))
+        self.btn_view_constructor.setMinimumHeight(40)
+        self.btn_view_constructor.setMinimumWidth(150)
+        self.btn_view_constructor.setToolTip(self.tr("Open advanced view constructor"))
+        layout.addWidget(self.btn_view_constructor)
         
         layout.addStretch()
         
@@ -310,6 +320,7 @@ class MainWindow(QMainWindow):
         # Actions utilisateur
         self.btn_generate.clicked.connect(self.on_generate_clicked)
         self.btn_refresh.clicked.connect(self.on_refresh_clicked)
+        self.btn_view_constructor.clicked.connect(self.on_view_constructor_clicked)
         
         # Changements de filtres
         self.date_start.dateTimeChanged.connect(self.on_filters_changed)
@@ -348,6 +359,27 @@ class MainWindow(QMainWindow):
         """Gestion du clic sur Actualiser"""
         # Signal pour actualiser les VIEWs
         self.view_structure_requested.emit("refresh")
+    
+    def on_view_constructor_clicked(self):
+        """Gestion du clic sur le constructeur de vues"""
+        try:
+            # Créer et afficher le dialogue du constructeur de vues
+            constructor_dialog = AdvancedViewCreatorDialog(self)
+            
+            # Connecter le signal de création de vue pour actualiser la liste
+            def on_view_created(view_data):
+                logger.info(f"🚀 Nouvelle vue créée: {view_data['name']}")
+                # Actualiser la liste des vues disponibles
+                self.view_structure_requested.emit("refresh")
+            
+            constructor_dialog.view_created.connect(on_view_created)
+            
+            # Afficher le dialogue
+            constructor_dialog.exec()
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur lors de l'ouverture du constructeur de vues: {e}")
+            self.show_error(f"Impossible d'ouvrir le constructeur de vues: {e}")
     
     def on_filters_changed(self):
         """Gestion du changement des filtres"""
