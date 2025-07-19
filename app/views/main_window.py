@@ -29,9 +29,14 @@ class MainWindow(QMainWindow):
     filters_changed = Signal(dict)  # Changement de filtres
     view_structure_requested = Signal(str)  # Demande structure VIEW
     
-    def __init__(self):
+    def __init__(self, database_manager=None, analysis_engine=None):
         super().__init__()
         self.current_data = pd.DataFrame()  # Données actuelles
+        
+        # Services injectés pour accès aux données
+        self.database_manager = database_manager
+        self.analysis_engine = analysis_engine
+        
         self.setup_ui()
         self.setup_connections()
         logger.info("🎨 Main interface initialized")
@@ -364,7 +369,7 @@ class MainWindow(QMainWindow):
         """Gestion du clic sur le constructeur de vues"""
         try:
             # Créer et afficher le dialogue du constructeur de vues
-            constructor_dialog = AdvancedViewCreatorDialog(self)
+            constructor_dialog = AdvancedViewCreatorDialog(self, self.database_manager, self.analysis_engine)
             
             # Connecter le signal de création de vue pour actualiser la liste
             def on_view_created(view_data):

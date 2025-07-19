@@ -176,3 +176,71 @@ class DatabaseManager:
     def get_connection(self):
         """Retourne une connexion à la base de données"""
         return self.engine.connect()
+    
+    def get_tables_metadata(self) -> List[Dict]:
+        """Récupère les métadonnées des tables pour le constructeur de vues"""
+        try:
+            inspector = inspect(self.engine)
+            schema = self.config.get_schema()
+            all_tables = inspector.get_table_names(schema=schema)
+            
+            tables_metadata = []
+            
+            # Tables principales à inclure (filtrage des tables système)
+            business_tables = []
+            for table in all_tables:
+                # Exclure les tables système et temporaires
+                if not any(pattern in table.lower() for pattern in [
+                    'pg_', 'information_schema', 'sql_', 'temp_', 'tmp_', 
+                    'log_', 'audit_', 'backup_', 'migration_'
+                ]):
+                    business_tables.append(table)
+            
+            for table_name in business_tables:
+                try:
+                    columns = inspector.get_columns(table_name, schema=schema)
+                    
+                    # Adapter les colonnes pour le constructeur de vues
+                    adapted_columns = []
+                    for col in columns:
+                        col_type = str(col['type']).lower()
+                        
+                        # Déterminer le type simplifié et si agrégeable
+                        if any(t in col_type for t in ['int', 'numeric', 'decimal', 'float', 'double']):
+                            simplified_type = 'numeric'
+                            aggregable = True
+                        elif any(t in col_type for t in ['date', 'time', 'timestamp']):
+                            simplified_type = 'date'
+                            aggregable = False
+                        elif any(t in col_type for t in ['bool']):
+                            simplified_type = 'boolean'
+                            aggregable = False
+                        else:
+                            simplified_type = 'text'
+                            aggregable = False
+                        
+                        adapted_columns.append({
+                            'name': col['name'],
+                            'type': simplified_type,
+                            'display_name': col['name'].replace('_', ' ').title(),
+                            'aggregable': aggregable,
+                            'nullable': col.get('nullable', True)
+                        })
+                    
+                    tables_metadata.append({
+                        'name': table_name,
+                        'display_name': f"📊 {table_name.replace('_', ' ').title()}",
+                        'fields': adapted_columns,
+                        'column_count': len(columns)
+                    })
+                    
+                except Exception as e:
+                    logger.warning(f"⚠️ Impossible d'analyser la table {table_name}: {e}")
+                    continue
+            
+            logger.info(f"📊 Found {len(tables_metadata)} business tables")
+            return tables_metadata
+            
+        except SQLAlchemyError as e:
+            logger.error(f"❌ Error discovering tables: {e}")
+            return []

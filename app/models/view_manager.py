@@ -10,7 +10,7 @@ import json
 from dataclasses import asdict
 
 from app.models.database_manager import DatabaseManager
-from view_builder import ViewDefinition, ViewBuilder, ModuleType
+from .view_builder import ViewDefinition, ViewBuilder, ModuleType
 from app.utils.view_exceptions import *
 
 logger = logging.getLogger(__name__)

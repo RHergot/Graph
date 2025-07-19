@@ -3,7 +3,9 @@ Exceptions spécialisées pour la gestion des VIEWs KPI
 Extensions des exceptions de base pour les opérations sur les VIEWs
 """
 
-from exceptions import ReportingModuleException
+class ReportingModuleException(Exception):
+    """Exception de base pour le module de reporting"""
+    pass
 
 class ViewManagerException(ReportingModuleException):
     """Exception de base pour le gestionnaire de VIEWs"""

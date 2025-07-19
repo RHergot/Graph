@@ -47,7 +47,7 @@ def main():
         
         # Initialisation interface
         logger.info("🎨 Creating user interface...")
-        main_window = MainWindow()
+        main_window = MainWindow(database_manager=db_manager, analysis_engine=analysis_engine)
         
         # Initialisation contrôleur
         logger.info("🎮 Configuring controller...")

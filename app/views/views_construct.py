@@ -15,150 +15,37 @@ from PySide6.QtWidgets import (
     QApplication, QDialog, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QComboBox, QPushButton, QGroupBox, QTextEdit, QSplitter,
     QListWidget, QListWidgetItem, QFrame, QScrollArea, QWidget,
-    QCheckBox, QSpinBox, QDateEdit, QLineEdit, QTabWidget, QMessageBox
+    QCheckBox, QSpinBox, QDateEdit, QLineEdit, QTabWidget, QMessageBox,
+    QTableWidget, QTableWidgetItem, QHeaderView
 )
 from PySide6.QtCore import Qt, QSize, Signal, QDate
 from PySide6.QtGui import QFont, QIcon
 import json
+import logging
 from datetime import datetime, timedelta
 
-# Import des gestionnaires de base de données existants
-try:
-    from ..models.database_manager import DatabaseManager
-    from ..models.view_manager import ViewManager
-    from ..models.view_crud_manager import ViewCrudManager
-    from ..models.view_builder import ViewBuilder, ViewDefinition, ModuleType
-    import pandas as pd
-    DB_AVAILABLE = True
-except ImportError:
-    DB_AVAILABLE = False
-    print("⚠️ DatabaseManager et/ou ViewManager non disponibles. Mode hors ligne activé.")
-    # Définir des classes de fallback pour éviter les erreurs de type
-    class ViewDefinition:
-        pass
-    class ModuleType:
-        AGGREGATION = "aggregation"
+logger = logging.getLogger(__name__)
 
-class DatabaseIntegration:
-    """Intégration avec DatabaseManager et ViewManager existants"""
-    
-    def __init__(self):
-        self.db_manager = None
-        self.view_manager = None
-        self.connected = False
-        
-        if DB_AVAILABLE:
-            self._initialize_managers()
-    
-    def _initialize_managers(self):
-        """Initialise les gestionnaires de base de données"""
-        try:
-            # Utiliser les gestionnaires existants
-            self.db_manager = DatabaseManager()
-            self.view_manager = ViewManager(self.db_manager)
-            
-            self.connected = True
-            print("✅ Connexion à la base de données réussie via DatabaseManager")
-            
-        except Exception as e:
-            # Gestion plus robuste des erreurs d'encodage
-            error_msg = str(e).encode('utf-8', errors='replace').decode('utf-8')
-            print(f"⚠️ Connexion à la base de données échouée: {error_msg}")
-            print("📝 Mode hors ligne activé - utilisation des données de test")
-            self.connected = False
-    
-    def get_available_views(self):
-        """Récupère la liste des vues disponibles"""
-        if not self.connected:
-            return []
-        
-        try:
-            # Utiliser DatabaseManager pour récupérer les vues
-            views_info = self.db_manager.get_available_views()
-            
-            # Adapter le format pour compatibilité
-            business_views = []
-            for view_info in views_info:
-                business_views.append({
-                    'name': view_info['name'],
-                    'column_count': view_info['column_count'],
-                    'columns': view_info.get('columns', [])[:5]
-                })
-            
-            return business_views
-            
-        except Exception as e:
-            print(f"❌ Erreur lors de la récupération des vues: {e}")
-            return []
-    
-    def create_view(self, view_name, sql_query):
-        """Crée une vue dans la base de données"""
-        if not self.connected:
-            return False, "Pas de connexion à la base de données"
-        
-        try:
-            # Utiliser ViewManager pour créer la vue
-            # Note: ViewManager utilise ViewDefinition, adaptation nécessaire
-            success = self.db_manager.execute_query(f"DROP VIEW IF EXISTS {view_name}")
-            success = self.db_manager.execute_query(sql_query)
-            
-            return True, f"Vue '{view_name}' créée avec succès"
-            
-        except Exception as e:
-            return False, f"Erreur lors de la création de la vue: {e}"
-    
-    def delete_view(self, view_name):
-        """Supprime une vue de la base de données"""
-        if not self.connected:
-            return False, "Pas de connexion à la base de données"
-        
-        try:
-            # Utiliser DatabaseManager pour supprimer la vue
-            success = self.db_manager.execute_query(f"DROP VIEW IF EXISTS {view_name}")
-            
-            return True, f"Vue '{view_name}' supprimée avec succès"
-            
-        except Exception as e:
-            return False, f"Erreur lors de la suppression de la vue: {e}"
-    
-    def test_view_query(self, sql_query):
-        """Teste une requête SQL sans l'exécuter"""
-        if not self.connected:
-            return False, "Pas de connexion à la base de données"
-        
-        try:
-            # Utiliser DatabaseManager pour tester la requête
-            test_sql = f"EXPLAIN {sql_query}"
-            result = self.db_manager.execute_query(test_sql)
-            
-            return True, "Requête SQL valide"
-            
-        except Exception as e:
-            return False, f"Erreur dans la requête SQL: {e}"
-    
-    def get_view_data(self, view_name, limit=100):
-        """Récupère les données d'une vue"""
-        if not self.connected:
-            return None, "Pas de connexion à la base de données"
-        
-        try:
-            # Utiliser DatabaseManager pour récupérer les données
-            query = f"SELECT * FROM {view_name} LIMIT {limit}"
-            df = self.db_manager.execute_query_to_dataframe(query)
-            return df, f"{len(df)} lignes récupérées"
-            
-        except Exception as e:
-            return None, f"Erreur lors de la récupération des données: {e}"
+# Import des gestionnaires de base de données existants
+from ..models.database_manager import DatabaseManager
+from ..models.view_manager import ViewManager
+from ..models.view_crud_manager import ViewCrudManager
+from ..models.view_builder import ViewBuilder, ViewDefinition, ModuleType
+import pandas as pd
 
 class AdvancedViewCreatorDialog(QDialog):
     """Dialog avancé pour créer des vues personnalisées avec agrégations"""
     
     view_created = Signal(dict)  # Signal émis quand une vue est créée
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, database_manager=None, analysis_engine=None):
         super().__init__(parent)
         self.setWindowTitle("🔧 Créateur de Vues Avancées - Version 3")
         self.setMinimumSize(1200, 800)
+        
+        # Services injectés pour accès aux données réelles
+        self.database_manager = database_manager
+        self.analysis_engine = analysis_engine
         
         # Initialiser TOUS les attributs dès le début pour éviter les erreurs
         self.view_builder = None
@@ -184,37 +71,64 @@ class AdvancedViewCreatorDialog(QDialog):
         
         # Initialiser les gestionnaires
         try:
-            if DB_AVAILABLE:
-                self.view_builder = ViewBuilder()
-                self.view_crud_manager = ViewCrudManager()
-            else:
-                self.view_builder = None
-                self.view_crud_manager = None
+            self.view_builder = ViewBuilder()
+            self.view_crud_manager = ViewCrudManager()
         except Exception as e:
-            print(f"Erreur initialisation gestionnaires: {e}")
+            logger.error(f"Erreur initialisation gestionnaires: {e}")
             self.view_builder = None
             self.view_crud_manager = None
         
-        # Charger les données des tables
-        self.tables_data = self.view_builder.tables_metadata if self.view_builder else self._load_sample_tables()
+        # Charger les données des tables (dynamiquement si services disponibles)
+        self.tables_data = self._load_real_tables_data() if self.database_manager else self._load_sample_tables()
         
-        # Initialiser la connexion à la base de données (pour compatibilité)
-        try:
-            self.db_helper = DatabaseIntegration()
-        except Exception as e:
-            print(f"Erreur initialisation db_helper: {e}")
-            self.db_helper = None
+        # Plus besoin de DatabaseIntegration - utilisation des services injectés
+        self.db_helper = None  # Conservé pour compatibilité avec le code existant
         
         self._setup_ui()
         self._connect_signals()
         
-        # Ajouter des vues de test pour démonstration si pas de DB
-        if not (self.db_helper and self.db_helper.connected):
+        # Ajouter des vues de test pour démonstration si pas de services injectés
+        if not self.database_manager:
             self._add_sample_views()
         
         # Initialiser la liste des vues dans l'onglet relecture
         self._refresh_views_list()
+    
+    def _load_real_tables_data(self):
+        """Méthode pour charger les données des tables réelles via DatabaseManager"""
+        if not self.database_manager:
+            return self._load_sample_tables()
         
+        try:
+            tables_metadata = self.database_manager.get_tables_metadata()
+            tables_data = {}
+            
+            for table_info in tables_metadata:
+                table_name = table_info['name']
+                fields = table_info.get('fields', [])
+                
+                # Adapter les champs pour compatibilité avec le format attendu
+                adapted_fields = {}
+                for field in fields:
+                    adapted_fields[field['name']] = {
+                        'type': field['type'],
+                        'display': field['display_name'],
+                        'aggregable': field.get('aggregable', False)
+                    }
+                
+                tables_data[table_name] = {
+                    'display_name': table_info['display_name'],
+                    'fields': adapted_fields
+                }
+            
+            logger.info(f"📊 Loaded {len(tables_data)} real tables for view constructor")
+            return tables_data
+        
+        except Exception as e:
+            logger.error(f"❌ Erreur _load_real_tables_data: {e}")
+            # Fallback vers les données de test en cas d'erreur
+            return self._load_sample_tables()
+    
     def _load_sample_tables(self):
         """Méthode de compatibilité - utilise ViewBuilder si disponible"""
         if self.view_builder:
@@ -395,6 +309,7 @@ class AdvancedViewCreatorDialog(QDialog):
         self.x_field_combo = QComboBox()
         self.x_field_combo.addItem("-- Sélectionner d'abord une table --", None)
         self.x_field_combo.setEnabled(False)
+        self.x_field_combo.currentTextChanged.connect(self._validate_form)
         x_layout.addWidget(self.x_field_combo)
         step2_layout.addLayout(x_layout)
         
@@ -424,6 +339,7 @@ class AdvancedViewCreatorDialog(QDialog):
         self.y1_field_combo = QComboBox()
         self.y1_field_combo.addItem("-- Sélectionner d'abord une table --", None)
         self.y1_field_combo.setEnabled(False)
+        self.y1_field_combo.currentTextChanged.connect(self._validate_form)
         y1_layout.addWidget(self.y1_field_combo)
         y_layout.addLayout(y1_layout)
         
@@ -694,6 +610,54 @@ class AdvancedViewCreatorDialog(QDialog):
         info_group.setLayout(info_layout)
         layout.addWidget(info_group)
         
+        # Boutons d'action
+        buttons_layout = QHBoxLayout()
+        
+        self.preview_btn = QPushButton("🔍 Générer Prévisualisation")
+        self.preview_btn.setEnabled(False)
+        self.preview_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #0066cc;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #0052a3;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
+        buttons_layout.addWidget(self.preview_btn)
+        
+        self.save_btn = QPushButton("💾 Créer ma vue")
+        self.save_btn.setEnabled(False)
+        self.save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
+        self.save_btn.clicked.connect(self._save_view)
+        buttons_layout.addWidget(self.save_btn)
+        
+        layout.addLayout(buttons_layout)
+        
         widget.setLayout(layout)
         return widget
     
@@ -730,7 +694,7 @@ class AdvancedViewCreatorDialog(QDialog):
         views_selection_layout.addWidget(self.btn_refresh_views)
         
         # Boutons pour gérer les vues de base de données
-        if self.db_helper.connected:
+        if self.database_manager:
             self.btn_preview_view = QPushButton("👁️ Aperçu")
             self.btn_preview_view.setMaximumWidth(100)
             self.btn_preview_view.setToolTip("Prévisualiser les données de la vue")
@@ -1074,7 +1038,7 @@ class AdvancedViewCreatorDialog(QDialog):
                 filters['contains_text'] = self.contains_text_edit.text()
             
             # Créer ViewDefinition si disponible, sinon un dictionnaire
-            if DB_AVAILABLE and hasattr(ViewDefinition, '__init__'):
+            if hasattr(ViewDefinition, '__init__'):
                 return ViewDefinition(
                     name=view_name,
                     main_table=main_table,
@@ -1108,6 +1072,200 @@ class AdvancedViewCreatorDialog(QDialog):
         except Exception as e:
             print(f"Erreur _create_view_definition: {e}")
             return None
+    
+    def _validate_form(self):
+        """Valide le formulaire et active/désactive les boutons"""
+        # Vérifier les champs obligatoires
+        has_table = self.selected_table1 is not None
+        has_x_field = self.x_field_combo.currentData() is not None
+        has_y_field = self.y1_field_combo.currentData() is not None
+        
+        form_valid = has_table and has_x_field and has_y_field
+        
+        self.preview_btn.setEnabled(form_valid)
+        self.save_btn.setEnabled(form_valid)
+        
+        if form_valid:
+            self._generate_preview()
+    
+    def _generate_preview(self):
+        """Génère la prévisualisation SQL avancée"""
+        if not self.selected_table1:
+            return
+        
+        table_name = self.selected_table1
+        x_field = self.x_field_combo.currentData()
+        y1_field = self.y1_field_combo.currentData()
+        y2_field = self.y2_field_combo.currentData()
+        y3_field = self.y3_field_combo.currentData()
+        view_name = self.view_name_combo.currentText().strip()
+        
+        # Récupérer les fonctions d'agrégation
+        y1_agg = self.y1_agg_combo.currentText().split(" - ")[0]
+        y2_agg = self.y2_agg_combo.currentText().split(" - ")[0] if y2_field else None
+        y3_agg = self.y3_agg_combo.currentText().split(" - ")[0] if y3_field else None
+        
+        # Groupement temporel
+        grouping = self.grouping_combo.currentText()
+        
+        # Générer le SQL
+        sql_lines = []
+        sql_lines.append(f"-- Vue personnalisée avancée générée automatiquement")
+        sql_lines.append(f"-- Table: {self.tables_data[table_name]['display_name']}")
+        sql_lines.append(f"-- Axe X: {self.tables_data[table_name]['fields'][x_field]['display']}")
+        sql_lines.append(f"-- Groupement: {grouping}")
+        sql_lines.append("")
+        sql_lines.append(f"CREATE OR REPLACE VIEW {view_name} AS")
+        sql_lines.append("SELECT")
+        
+        # Générer le champ X avec groupement
+        if "Par jour" in grouping:
+            sql_lines.append(f"    DATE_TRUNC('day', {x_field}::timestamp) AS periode,")
+        elif "Par semaine" in grouping:
+            sql_lines.append(f"    DATE_TRUNC('week', {x_field}::timestamp) AS periode,")
+        elif "Par mois" in grouping:
+            sql_lines.append(f"    DATE_TRUNC('month', {x_field}::timestamp) AS periode,")
+        elif "Par trimestre" in grouping:
+            sql_lines.append(f"    DATE_TRUNC('quarter', {x_field}::timestamp) AS periode,")
+        elif "Par année" in grouping:
+            sql_lines.append(f"    DATE_TRUNC('year', {x_field}::timestamp) AS periode,")
+        else:
+            if self.tables_data[table_name]['fields'][x_field]['type'] == 'date':
+                sql_lines.append(f"    {x_field}::date AS axe_x,")
+            else:
+                sql_lines.append(f"    {x_field} AS axe_x,")
+        
+        # Générer les champs Y avec agrégation
+        y_fields = []
+        if y1_field:
+            y_fields.append((y1_field, y1_agg, self.tables_data[table_name]['fields'][y1_field]['display']))
+        if y2_field:
+            y_fields.append((y2_field, y2_agg, self.tables_data[table_name]['fields'][y2_field]['display']))
+        if y3_field:
+            y_fields.append((y3_field, y3_agg, self.tables_data[table_name]['fields'][y3_field]['display']))
+        
+        for i, (field, agg, display) in enumerate(y_fields):
+            comma = "," if i < len(y_fields) - 1 else ""
+            sql_lines.append(f"    {agg}({field}) AS {agg.lower()}_{field}{comma}")
+        
+        sql_lines.append(f"FROM {table_name}")
+        
+        # Ajouter les filtres
+        where_conditions = []
+        where_conditions.append(f"{x_field} IS NOT NULL")
+        
+        if self.enable_date_filter_check.isChecked():
+            date_from = self.date_from_edit.date().toString("yyyy-MM-dd")
+            date_to = self.date_to_edit.date().toString("yyyy-MM-dd")
+            where_conditions.append(f"{x_field} BETWEEN '{date_from}' AND '{date_to}'")
+        
+        if self.enable_min_filter_check.isChecked() and self.min_value_edit.text():
+            where_conditions.append(f"{y1_field} >= {self.min_value_edit.text()}")
+        
+        if self.enable_max_filter_check.isChecked() and self.max_value_edit.text():
+            where_conditions.append(f"{y1_field} <= {self.max_value_edit.text()}")
+        
+        if where_conditions:
+            sql_lines.append("WHERE " + " AND ".join(where_conditions))
+        
+        # Ajouter GROUP BY si nécessaire
+        if "Par " in grouping:
+            sql_lines.append("GROUP BY periode")
+            sql_lines.append("ORDER BY periode DESC;")
+        elif y_fields:
+            if "Par " not in grouping:
+                sql_lines.append(f"GROUP BY {x_field}")
+            if self.tables_data[table_name]['fields'][x_field]['type'] == 'date':
+                sql_lines.append(f"ORDER BY {x_field} DESC;")
+            else:
+                sql_lines.append(f"ORDER BY {x_field} DESC;")
+        
+        # Afficher le SQL
+        sql_text = "\n".join(sql_lines)
+        self.sql_preview.setPlainText(sql_text)
+        
+        # Mettre à jour les informations
+        agg_info = []
+        for field, agg, display in y_fields:
+            agg_info.append(f"{agg}({display})")
+        
+        info_text = f"""
+🎯 <b>Vue:</b> {view_name}
+📊 <b>Table source:</b> {self.tables_data[table_name]['display_name']}
+📈 <b>Axe X:</b> {self.tables_data[table_name]['fields'][x_field]['display']}
+📊 <b>Groupement:</b> {grouping}
+🧮 <b>Agrégations:</b> {', '.join(agg_info)}
+🔍 <b>Filtres actifs:</b> {sum([
+    self.enable_date_filter_check.isChecked(),
+    self.enable_min_filter_check.isChecked(),
+    self.enable_max_filter_check.isChecked(),
+    self.enable_contains_filter_check.isChecked()
+])}
+        """.strip()
+        self.info_label.setText(info_text)
+    
+    def _save_view(self):
+        """Sauvegarde la vue créée"""
+        from datetime import datetime
+        
+        view_data = {
+            "name": self.view_name_combo.currentText().strip(),
+            "main_table": self.selected_table1,
+            "secondary_table": self.selected_table2,
+            "x_field": self.x_field_combo.currentData(),
+            "y_fields": [
+                self.y1_field_combo.currentData(),
+                self.y2_field_combo.currentData(),
+                self.y3_field_combo.currentData()
+            ],
+            "aggregations": {
+                "y1": self.y1_agg_combo.currentText().split(" - ")[0] if self.y1_field_combo.currentData() else None,
+                "y2": self.y2_agg_combo.currentText().split(" - ")[0] if self.y2_field_combo.currentData() else None,
+                "y3": self.y3_agg_combo.currentText().split(" - ")[0] if self.y3_field_combo.currentData() else None
+            },
+            "grouping": self.grouping_combo.currentText(),
+            "filters": {
+                "date_filter": self.enable_date_filter_check.isChecked(),
+                "date_from": self.date_from_edit.date().toString("yyyy-MM-dd") if self.enable_date_filter_check.isChecked() else None,
+                "date_to": self.date_to_edit.date().toString("yyyy-MM-dd") if self.enable_date_filter_check.isChecked() else None,
+                "min_value": self.min_value_edit.text() if self.enable_min_filter_check.isChecked() else None,
+                "max_value": self.max_value_edit.text() if self.enable_max_filter_check.isChecked() else None,
+                "contains_text": self.contains_text_edit.text() if self.enable_contains_filter_check.isChecked() else None
+            },
+            "sql": self.sql_preview.toPlainText()
+        }
+        
+        # Nettoyer les champs vides
+        view_data["y_fields"] = [f for f in view_data["y_fields"] if f is not None]
+        
+        # Ajouter la vue à la liste pour relecture (V3)
+        view_for_review = {
+            "id": len(self.created_views) + 1,
+            "name": view_data["name"],
+            "created_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "data": view_data,
+            "review_status": "📝 Brouillon",
+            "reviewer": "",
+            "review_comments": "",
+            "review_date": None
+        }
+        self.created_views.append(view_for_review)
+        
+        # Rafraîchir la liste des vues dans l'onglet relecture
+        self._refresh_views_list()
+        
+        self.view_created.emit(view_data)
+        
+        # Afficher un message de confirmation
+        QMessageBox.information(
+            self, 
+            "Vue créée", 
+            f"La vue '{view_data['name']}' a été créée avec succès !\n\n"
+            f"Vous pouvez maintenant la relire dans l'onglet 'Relecture'."
+        )
+        
+        # Basculer vers l'onglet relecture
+        self.tabs.setCurrentIndex(4)  # Index de l'onglet relecture
     
     def _update_preview_info(self, view_info: dict):
         """Met à jour les informations de prévisualisation"""
@@ -1310,8 +1468,13 @@ class AdvancedViewCreatorDialog(QDialog):
         self.views_combo.clear()
         
         # Utiliser la base de données si disponible
-        if self.db_helper.connected:
-            db_views = self.db_helper.get_available_views()
+        if self.database_manager:
+            # Utiliser les services injectés pour récupérer les vues
+            try:
+                db_views = self.database_manager.get_available_views()
+            except Exception as e:
+                logger.error(f"Erreur récupération vues DB: {e}")
+                db_views = []
             for view_info in db_views:
                 display_text = f"{view_info['name']} ({view_info['column_count']} colonnes)"
                 # Créer un objet view_data compatible
@@ -1342,61 +1505,6 @@ class AdvancedViewCreatorDialog(QDialog):
         
         # Mettre à jour le label du nombre de vues
         self.lbl_view_count.setText(f"{total_count} vue{'s' if total_count != 1 else ''}")
-    
-    def _add_sample_views(self):
-        """Ajoute des vues de test pour démonstration"""
-        sample_views = [
-            {
-                'name': 'vue_maintenance_mensuelle',
-                'type': 'Analyse temporelle',
-                'created_date': '2024-01-15',
-                'data': {
-                    'main_table': 'maintenance',
-                    'x_field': 'date_debut_reelle',
-                    'y_fields': ['duree_intervention_h', 'cout_total'],
-                    'grouping': 'monthly',
-                    'sql': 'SELECT DATE_TRUNC(\'month\', date_debut_reelle) as mois, SUM(duree_intervention_h) as duree_totale, SUM(cout_total) as cout_total FROM maintenance GROUP BY DATE_TRUNC(\'month\', date_debut_reelle) ORDER BY mois;'
-                },
-                'review_status': '📝 Brouillon',
-                'reviewer': '',
-                'review_comments': '',
-                'review_date': None
-            },
-            {
-                'name': 'vue_machines_criticite',
-                'type': 'Analyse par criticité',
-                'created_date': '2024-01-20',
-                'data': {
-                    'main_table': 'machine',
-                    'x_field': 'criticite',
-                    'y_fields': ['valeur_achat'],
-                    'grouping': 'none',
-                    'sql': 'SELECT criticite, COUNT(*) as nb_machines, AVG(valeur_achat) as valeur_moyenne FROM machine GROUP BY criticite ORDER BY criticite;'
-                },
-                'review_status': '✅ Approuvé',
-                'reviewer': 'Admin',
-                'review_comments': 'Vue validée pour le reporting mensuel',
-                'review_date': '2024-01-22'
-            },
-            {
-                'name': 'vue_techniciens_performance',
-                'type': 'Analyse de performance',
-                'created_date': '2024-01-25',
-                'data': {
-                    'main_table': 'technicien',
-                    'x_field': 'specialite',
-                    'y_fields': ['niveau_competence'],
-                    'grouping': 'none',
-                    'sql': 'SELECT t.specialite, AVG(t.niveau_competence) as competence_moyenne, COUNT(m.id_maintenance) as nb_interventions FROM technicien t LEFT JOIN maintenance m ON t.id_technicien = m.technicien_id GROUP BY t.specialite;'
-                },
-                'review_status': '🔄 En relecture',
-                'reviewer': 'Superviseur',
-                'review_comments': 'À vérifier avec les données récentes',
-                'review_date': None
-            }
-        ]
-        
-        self.created_views.extend(sample_views)
     
     def _on_view_selected(self, index):
         """Gère la sélection d'une vue dans la liste"""
@@ -1495,8 +1603,19 @@ Utilisez le bouton "Aperçu" pour voir les données."""
         
         view_name = view_data['name']
         
-        # Récupérer les données
-        df, message = self.db_helper.get_view_data(view_name, limit=50)
+        # Récupérer les données via les services injectés
+        if not self.database_manager:
+            QMessageBox.warning(self, "Erreur", "Aucune connexion à la base de données disponible.")
+            return
+        
+        try:
+            # Utiliser DatabaseManager pour récupérer les données
+            query = f"SELECT * FROM {view_name} LIMIT 50"
+            df = self.database_manager.execute_query(query)
+            message = f"{len(df)} lignes récupérées"
+        except Exception as e:
+            QMessageBox.critical(self, "Erreur", f"Erreur lors de la récupération des données: {e}")
+            return
         
         if df is not None:
             # Créer une fenêtre de prévisualisation

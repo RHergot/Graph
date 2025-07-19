@@ -6,10 +6,10 @@ from PySide6.QtCore import QObject, QTimer
 import logging
 from typing import Dict, Optional
 
-from models.analysis_engine import AnalysisEngine
-from views.main_window import MainWindow
-from utils.worker import AnalysisWorker, ViewDiscoveryWorker, ViewInfoWorker
-from utils.exceptions import DatabaseConnectionError
+from ..models.analysis_engine import AnalysisEngine
+from ..views.main_window import MainWindow
+from ..utils.worker import AnalysisWorker, ViewDiscoveryWorker, ViewInfoWorker
+from ..utils.exceptions import DatabaseConnectionError
 
 logger = logging.getLogger(__name__)
 
