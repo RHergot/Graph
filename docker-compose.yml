@@ -7,6 +7,11 @@ services:
     environment:
       - DISPLAY=:99
       - QT_QPA_PLATFORM=xcb
+      - POSTGRES_HOSTNAME=postgres
+      - POSTGRES_DB=gmao_industrie_data
+      - POSTGRES_USER=gmao_app_user
+      - POSTGRES_PASSWORD=mot_de_passe_fort
+      - POSTGRES_PORT=5432
     volumes:
       - ./app/config:/app/app/config
       - ./logs:/app/logs
@@ -23,9 +28,11 @@ services:
     image: postgres:15-alpine
     container_name: bi-postgres
     environment:
-      POSTGRES_DB: bi_reporting
-      POSTGRES_USER: bi_user
-      POSTGRES_PASSWORD: bi_password
+      POSTGRES_HOSTNAME: 45.14.165.228
+      POSTGRES_DB: gmao_industrie_data
+      POSTGRES_USER: gmao_app_user
+      POSTGRES_PASSWORD: mot_de_passe_fort
+      POSTGRES_PORT: 5432      
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./sql/init:/docker-entrypoint-initdb.d

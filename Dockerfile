@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
     libpq-dev \
+    libegl1-mesa \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
 
